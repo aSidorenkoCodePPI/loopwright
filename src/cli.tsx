@@ -19,6 +19,7 @@ import {
   executeConvertCommand,
   executeDocsCommand,
   executeJiraPrdCommand,
+  executeLearnCommand,
 } from './commands/index.js';
 
 /**
@@ -35,6 +36,7 @@ Commands:
   create-prd [opts]   Create a new PRD interactively (alias: prime)
   convert [options]   Convert PRD markdown to JSON format
   jira-prd [options]  Fetch Jira issues assigned to you via MCP
+  learn [path]        Analyze project for AI agents
   run [options]       Start Ralph execution
   resume [options]    Resume an interrupted session
   status [options]    Check session status (headless, for CI/scripts)
@@ -83,6 +85,8 @@ Examples:
   ralph-tui create-prd                   # Create a new PRD interactively
   ralph-tui create-prd --chat            # Create PRD with AI chat mode
   ralph-tui convert --to json ./prd.md   # Convert PRD to JSON
+  ralph-tui learn                        # Analyze current directory
+  ralph-tui learn ./my-project           # Analyze specific directory
   ralph-tui run                          # Start execution with defaults
   ralph-tui run --epic myproject-epic    # Run with specific epic
   ralph-tui run --prd ./prd.json         # Run with PRD file
@@ -144,6 +148,12 @@ async function handleSubcommand(args: string[]): Promise<boolean> {
   // Jira-PRD command
   if (command === 'jira-prd') {
     await executeJiraPrdCommand(args.slice(1));
+    return true;
+  }
+
+  // Learn command
+  if (command === 'learn') {
+    await executeLearnCommand(args.slice(1));
     return true;
   }
 

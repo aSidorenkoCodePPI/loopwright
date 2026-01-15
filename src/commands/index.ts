@@ -85,3 +85,12 @@ export {
 } from './select-issue.jsx';
 
 export type { IssueSelectionResult, SelectIssueOptions } from './select-issue.jsx';
+
+export {
+  executeLearnCommand,
+  parseLearnArgs,
+  printLearnHelp,
+  analyzeProject,
+} from './learn.js';
+
+export type { LearnResult, LearnArgs } from './learn.js';
