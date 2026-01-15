@@ -92853,6 +92853,22 @@ function parseJiraApiIssueArray(parsed) {
   }
   return issues;
 }
+function normalizeJsonString(jsonStr) {
+  let normalized = jsonStr.split(`
+`).map((line) => line.trim()).join(" ");
+  normalized = normalized.replace(/\s+/g, " ");
+  normalized = normalized.replace(/:\s+"/g, ':"');
+  normalized = normalized.replace(/:\s+\[/g, ":[");
+  normalized = normalized.replace(/:\s+\{/g, ":{");
+  normalized = normalized.replace(/:\s+(\d)/g, ":$1");
+  normalized = normalized.replace(/:\s+(true|false|null)/g, ":$1");
+  normalized = normalized.replace(/\s+,/g, ",");
+  normalized = normalized.replace(/\s+\]/g, "]");
+  normalized = normalized.replace(/\s+\}/g, "}");
+  normalized = normalized.replace(/\[\s+/g, "[");
+  normalized = normalized.replace(/\{\s+/g, "{");
+  return normalized;
+}
 function parseIssuesFromOutput(output) {
   const issues = [];
   const markdownMatch = output.match(/```(?:json)?\s*([\s\S]*?)```/);
@@ -92861,7 +92877,8 @@ function parseIssuesFromOutput(output) {
     const jsonMatch2 = jsonContent.match(/\[[\s\S]*\]/);
     if (jsonMatch2) {
       try {
-        const parsed = JSON.parse(jsonMatch2[0]);
+        const normalizedJson = normalizeJsonString(jsonMatch2[0]);
+        const parsed = JSON.parse(normalizedJson);
         const parsedIssues = parseIssueArray(parsed);
         if (parsedIssues.length > 0) {
           return parsedIssues;
@@ -92874,7 +92891,8 @@ function parseIssuesFromOutput(output) {
     try {
       const issuesArrayMatch = jiraApiMatch[0].match(/"issues"\s*:\s*(\[[\s\S]*?\])/);
       if (issuesArrayMatch && issuesArrayMatch[1]) {
-        const parsed = JSON.parse(issuesArrayMatch[1]);
+        const normalizedJson = normalizeJsonString(issuesArrayMatch[1]);
+        const parsed = JSON.parse(normalizedJson);
         const parsedIssues = parseJiraApiIssueArray(parsed);
         if (parsedIssues.length > 0) {
           return parsedIssues;
@@ -92885,7 +92903,8 @@ function parseIssuesFromOutput(output) {
   const jsonMatch = output.match(/\[[\s\S]*?\]/);
   if (jsonMatch) {
     try {
-      const parsed = JSON.parse(jsonMatch[0]);
+      const normalizedJson = normalizeJsonString(jsonMatch[0]);
+      const parsed = JSON.parse(normalizedJson);
       const parsedIssues = parseIssueArray(parsed);
       if (parsedIssues.length > 0) {
         return parsedIssues;
@@ -93265,4 +93284,4 @@ main2().catch((error48) => {
   process.exit(1);
 });
 
-//# debugId=482674D3D688533E64756E2164756E21
+//# debugId=BBAC2598C3C6D36664756E2164756E21

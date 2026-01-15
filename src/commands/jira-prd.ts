@@ -399,6 +399,39 @@ function parseJiraApiIssueArray(parsed: unknown[]): JiraIssue[] {
 }
 
 /**
+ * Normalize JSON string by removing extra whitespace/newlines that break parsing.
+ * Copilot CLI output often has line breaks in the middle of JSON values.
+ */
+function normalizeJsonString(jsonStr: string): string {
+  // Remove leading whitespace from each line (indentation)
+  let normalized = jsonStr
+    .split('\n')
+    .map(line => line.trim())
+    .join(' ');
+  
+  // Collapse multiple spaces into one
+  normalized = normalized.replace(/\s+/g, ' ');
+  
+  // Fix common issues: space after colon before value
+  normalized = normalized.replace(/:\s+"/g, ':"');
+  normalized = normalized.replace(/:\s+\[/g, ':[');
+  normalized = normalized.replace(/:\s+\{/g, ':{');
+  normalized = normalized.replace(/:\s+(\d)/g, ':$1');
+  normalized = normalized.replace(/:\s+(true|false|null)/g, ':$1');
+  
+  // Fix spaces before commas and closing brackets
+  normalized = normalized.replace(/\s+,/g, ',');
+  normalized = normalized.replace(/\s+\]/g, ']');
+  normalized = normalized.replace(/\s+\}/g, '}');
+  
+  // Fix spaces after opening brackets
+  normalized = normalized.replace(/\[\s+/g, '[');
+  normalized = normalized.replace(/\{\s+/g, '{');
+  
+  return normalized;
+}
+
+/**
  * Parse Jira issues from Copilot CLI output.
  * The output format depends on how the MCP server formats the response.
  */
@@ -413,7 +446,9 @@ function parseIssuesFromOutput(output: string): JiraIssue[] {
     const jsonMatch = jsonContent.match(/\[[\s\S]*\]/);
     if (jsonMatch) {
       try {
-        const parsed = JSON.parse(jsonMatch[0]) as unknown[];
+        // Normalize the JSON to handle line breaks in values
+        const normalizedJson = normalizeJsonString(jsonMatch[0]);
+        const parsed = JSON.parse(normalizedJson) as unknown[];
         const parsedIssues = parseIssueArray(parsed);
         if (parsedIssues.length > 0) {
           return parsedIssues;
@@ -431,7 +466,8 @@ function parseIssuesFromOutput(output: string): JiraIssue[] {
       // Extract just the issues array from the match
       const issuesArrayMatch = jiraApiMatch[0].match(/"issues"\s*:\s*(\[[\s\S]*?\])/);
       if (issuesArrayMatch && issuesArrayMatch[1]) {
-        const parsed = JSON.parse(issuesArrayMatch[1]) as unknown[];
+        const normalizedJson = normalizeJsonString(issuesArrayMatch[1]);
+        const parsed = JSON.parse(normalizedJson) as unknown[];
         const parsedIssues = parseJiraApiIssueArray(parsed);
         if (parsedIssues.length > 0) {
           return parsedIssues;
@@ -446,7 +482,8 @@ function parseIssuesFromOutput(output: string): JiraIssue[] {
   const jsonMatch = output.match(/\[[\s\S]*?\]/);
   if (jsonMatch) {
     try {
-      const parsed = JSON.parse(jsonMatch[0]) as unknown[];
+      const normalizedJson = normalizeJsonString(jsonMatch[0]);
+      const parsed = JSON.parse(normalizedJson) as unknown[];
       const parsedIssues = parseIssueArray(parsed);
       if (parsedIssues.length > 0) {
         return parsedIssues;
