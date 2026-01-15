@@ -92717,7 +92717,12 @@ function parseLinkedIssues(issueObj) {
 }
 function parseIssuesFromOutput(output) {
   const issues = [];
-  const jsonMatch = output.match(/\[[\s\S]*\]/);
+  let jsonContent = output;
+  const markdownMatch = output.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (markdownMatch && markdownMatch[1]) {
+    jsonContent = markdownMatch[1].trim();
+  }
+  const jsonMatch = jsonContent.match(/\[[\s\S]*\]/);
   if (jsonMatch) {
     try {
       const parsed = JSON.parse(jsonMatch[0]);
@@ -94184,4 +94189,4 @@ export {
   AgentRegistry
 };
 
-//# debugId=CFAD8D652074EEB264756E2164756E21
+//# debugId=9502D8F51CBDA3F764756E2164756E21

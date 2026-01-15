@@ -269,9 +269,16 @@ function parseLinkedIssues(issueObj: Record<string, unknown>): JiraLinkedIssue[]
 function parseIssuesFromOutput(output: string): JiraIssue[] {
   const issues: JiraIssue[] = [];
 
+  // First, try to extract JSON from markdown code fences (```json ... ```)
+  let jsonContent = output;
+  const markdownMatch = output.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (markdownMatch && markdownMatch[1]) {
+    jsonContent = markdownMatch[1].trim();
+  }
+
   // Try to find JSON array in the output
   // MCP responses typically include structured data
-  const jsonMatch = output.match(/\[[\s\S]*\]/);
+  const jsonMatch = jsonContent.match(/\[[\s\S]*\]/);
   if (jsonMatch) {
     try {
       const parsed = JSON.parse(jsonMatch[0]) as unknown[];

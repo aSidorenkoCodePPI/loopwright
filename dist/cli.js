@@ -37129,17 +37129,6 @@ var require_package = __commonJS((exports, module2) => {
       "website:build": "cd website && bun run build",
       "website:lint": "cd website && bun run lint"
     },
-    files: [
-      "dist"
-    ],
-    keywords: [
-      "tui",
-      "ai",
-      "agent",
-      "orchestrator",
-      "terminal",
-      "cli"
-    ],
     author: "subsy",
     license: "MIT",
     repository: {
@@ -92768,7 +92757,12 @@ function parseLinkedIssues(issueObj) {
 }
 function parseIssuesFromOutput(output) {
   const issues = [];
-  const jsonMatch = output.match(/\[[\s\S]*\]/);
+  let jsonContent = output;
+  const markdownMatch = output.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (markdownMatch && markdownMatch[1]) {
+    jsonContent = markdownMatch[1].trim();
+  }
+  const jsonMatch = jsonContent.match(/\[[\s\S]*\]/);
   if (jsonMatch) {
     try {
       const parsed = JSON.parse(jsonMatch[0]);
@@ -93182,4 +93176,4 @@ main2().catch((error48) => {
   process.exit(1);
 });
 
-//# debugId=9BADD66E4849282E64756E2164756E21
+//# debugId=172176FF0F93E4F264756E2164756E21
