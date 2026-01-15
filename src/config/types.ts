@@ -116,6 +116,9 @@ export interface RuntimeOptions {
 
   /** Override notifications enabled state (--notify or --no-notify CLI flags) */
   notify?: boolean;
+
+  /** Context file paths to load for AI agent prompts */
+  contextPaths?: string[];
 }
 
 /**
@@ -227,6 +230,12 @@ export interface RalphConfig {
 
   /** Custom prompt template path (resolved) */
   promptTemplate?: string;
+
+  /** Loaded context content for AI prompts */
+  contextContent?: string;
+
+  /** Context file paths that were loaded */
+  contextPaths?: string[];
 }
 
 /**

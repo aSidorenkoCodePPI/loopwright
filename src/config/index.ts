@@ -516,6 +516,31 @@ export async function buildConfig(
     ...(options.maxRetries !== undefined ? { maxRetries: options.maxRetries } : {}),
   };
 
+  // Load context files if specified
+  let contextContent: string | undefined;
+  let contextPaths: string[] | undefined;
+  if (options.contextPaths && options.contextPaths.length > 0) {
+    const { loadContextFiles } = await import('../context/index.js');
+    const contextResult = loadContextFiles(options.contextPaths, cwd);
+    
+    if (!contextResult.success) {
+      // Show errors but don't fail - just log them
+      for (const error of contextResult.errors) {
+        console.error(`Context error: ${error}`);
+      }
+      // If all files failed, return null to abort
+      if (contextResult.files.every((f) => !f.success)) {
+        console.error('Error: Failed to load any context files');
+        return null;
+      }
+    }
+    
+    if (contextResult.combinedContent) {
+      contextContent = contextResult.combinedContent;
+      contextPaths = contextResult.files.filter((f) => f.success).map((f) => f.path);
+    }
+  }
+
   return {
     agent: agentConfig,
     tracker: trackerConfig,
@@ -537,6 +562,9 @@ export async function buildConfig(
     errorHandling,
     // CLI --prompt takes precedence over config file prompt_template
     promptTemplate: options.promptPath ?? storedConfig.prompt_template,
+    // Context files
+    contextContent,
+    contextPaths,
   };
 }
 

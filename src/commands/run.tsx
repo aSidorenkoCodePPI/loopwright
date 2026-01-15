@@ -181,6 +181,17 @@ export function parseRunArgs(args: string[]): ExtendedRuntimeOptions {
       case '--no-notify':
         options.notify = false;
         break;
+
+      case '--context':
+      case '-c':
+        if (nextArg && !nextArg.startsWith('-')) {
+          if (!options.contextPaths) {
+            options.contextPaths = [];
+          }
+          options.contextPaths.push(nextArg);
+          i++;
+        }
+        break;
     }
   }
 
@@ -203,6 +214,7 @@ Options:
   --model <name>      Override model (e.g., opus, sonnet)
   --tracker <name>    Override tracker plugin (e.g., beads, beads-bv, json)
   --prompt <path>     Custom prompt file (default: based on tracker mode)
+  --context, -c <path> Context file to load for AI prompts (can be specified multiple times)
   --output-dir <path> Directory for iteration logs (default: .ralph-tui/iterations)
   --progress-file <path> Progress file for cross-iteration context (default: .ralph-tui/progress.md)
   --iterations <n>    Maximum iterations (0 = unlimited)
@@ -215,6 +227,17 @@ Options:
   --no-setup          Skip interactive setup even if no config exists
   --notify            Force enable desktop notifications
   --no-notify         Force disable desktop notifications
+
+Context Files:
+  Context files provide project-specific information to the AI agent.
+  Use 'ralph-tui learn' to generate a ralph-context.md file automatically.
+  
+  Multiple context files can be specified:
+    ralph-tui run --context ./ralph-context.md --context ./docs/architecture.md
+  
+  Supported formats: .md, .markdown, .txt
+  Maximum file size: 100KB per file
+  Loading time must be < 1 second total
 
 Log Output Format (--no-tui mode):
   [timestamp] [level] [component] message
@@ -232,6 +255,7 @@ Examples:
   ralph-tui run                              # Start with defaults
   ralph-tui run --epic ralph-tui-45r         # Run with specific epic
   ralph-tui run --prd ./prd.json             # Run with PRD file
+  ralph-tui run --context ./ralph-context.md # Run with project context
   ralph-tui run --agent copilot --model gpt-4o  # Override agent settings
   ralph-tui run --tracker beads-bv           # Use beads-bv tracker
   ralph-tui run --iterations 20              # Limit to 20 iterations

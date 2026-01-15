@@ -70,6 +70,9 @@ export interface TemplateVariables {
 
   /** Recent progress summary from previous iterations (optional) */
   recentProgress: string;
+
+  /** Project context loaded from context files (optional) */
+  projectContext: string;
 }
 
 /**

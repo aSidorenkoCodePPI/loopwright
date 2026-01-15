@@ -253,6 +253,7 @@ export function buildTemplateVariables(
     currentTimestamp: new Date().toISOString(),
     notes: (task.metadata?.notes as string) ?? '',
     recentProgress: recentProgress ?? '',
+    projectContext: config.contextContent ?? '',
   };
 }
 

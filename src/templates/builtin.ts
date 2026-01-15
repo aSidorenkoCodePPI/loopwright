@@ -28,6 +28,11 @@ export const DEFAULT_TEMPLATE = `## Task
 **Dependencies**: {{dependsOn}}
 {{/if}}
 
+{{#if projectContext}}
+## Project Context
+{{projectContext}}
+{{/if}}
+
 {{#if recentProgress}}
 ## Previous Progress
 {{recentProgress}}
@@ -58,6 +63,11 @@ export const BEADS_TEMPLATE = `## Bead Details
 {{#if acceptanceCriteria}}
 ## Acceptance Criteria
 {{acceptanceCriteria}}
+{{/if}}
+
+{{#if projectContext}}
+## Project Context
+{{projectContext}}
 {{/if}}
 
 {{#if recentProgress}}
@@ -105,6 +115,11 @@ This task depends on: {{dependsOn}}
 Completing this task will unblock: {{blocks}}
 {{/if}}
 
+{{#if projectContext}}
+## Project Context
+{{projectContext}}
+{{/if}}
+
 {{#if recentProgress}}
 ## Previous Progress
 {{recentProgress}}
@@ -146,6 +161,11 @@ export const JSON_TEMPLATE = `## User Story
 
 {{#if dependsOn}}
 **Prerequisites**: {{dependsOn}}
+{{/if}}
+
+{{#if projectContext}}
+## Project Context
+{{projectContext}}
 {{/if}}
 
 {{#if recentProgress}}
