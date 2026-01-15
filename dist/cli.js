@@ -37099,7 +37099,7 @@ var require_node_notifier = __commonJS((exports, module2) => {
 var require_package = __commonJS((exports, module2) => {
   module2.exports = {
     name: "@asidorenkocodeppi/ralph-tui",
-    version: "0.1.10",
+    version: "0.1.11",
     publishConfig: {
       access: "public"
     },
@@ -37114,7 +37114,7 @@ var require_package = __commonJS((exports, module2) => {
       }
     },
     bin: {
-      "ralph-tui": "./dist/cli.js"
+      "ralph-tui": "dist/cli.js"
     },
     scripts: {
       build: "bun run build:cli && bun run build:lib && bun run build:assets",
@@ -37136,7 +37136,7 @@ var require_package = __commonJS((exports, module2) => {
     license: "MIT",
     repository: {
       type: "git",
-      url: "https://github.com/aSidorenkoCodePPI/ralph-tui.git"
+      url: "git+https://github.com/aSidorenkoCodePPI/ralph-tui.git"
     },
     homepage: "https://github.com/aSidorenkoCodePPI/ralph-tui",
     bugs: {
@@ -90565,14 +90565,36 @@ var PRD_SYSTEM_PROMPT = buildPrdSystemPrompt(DEFAULT_PRD_SKILL);
 var TASK_SYSTEM_PROMPT = "You are a helpful assistant. Follow the user instructions carefully.";
 var PRD_COMPATIBILITY_GUIDANCE = `
 # PRD Output Requirements
-- Wrap the final PRD in [PRD]...[/PRD] markers.
-- Start the PRD with a "# PRD: <Feature Name>" heading.
-- Include a "## Quality Gates" section listing required commands.
-- Include a "## User Stories" section with entries like:
-  - "### US-001: Title"
-  - "**Description:** As a user, I want..."
-  - "**Acceptance Criteria:**" followed by checklist bullets ("- [ ] ...").
-- Use markdown formatting suitable for conversion tools.
+
+CRITICAL: The PRD MUST follow this exact format to be parsed correctly.
+
+## Required Structure
+
+1. Start with: # PRD: <Feature Name>
+2. Include a "## User Stories" section
+3. Each user story MUST use this EXACT format:
+
+### US-001: Story Title Here
+
+As a [user type], I want [goal] so that [benefit].
+
+**Acceptance Criteria:**
+- [ ] First criterion that can be checked off
+- [ ] Second criterion that can be checked off
+- [ ] Third criterion that can be checked off
+
+**Priority:** P1
+
+### US-002: Next Story Title
+
+...and so on.
+
+## Important Rules
+- Story IDs MUST be "US-" followed by 3 digits (US-001, US-002, etc.)
+- Do NOT use Jira issue keys (like TPH-123) as story IDs
+- Each story MUST have "**Acceptance Criteria:**" followed by checklist items
+- Checklist items MUST use "- [ ]" format (dash, space, brackets, space)
+- Wrap the final PRD in [PRD]...[/PRD] markers
 `;
 function stripSkillFrontMatter(skillSource) {
   const frontMatterRegex = /^---\s*[\s\S]*?\n---\s*\n?/;
@@ -90813,9 +90835,8 @@ ${jiraContext}`;
 function buildJiraIssueContext(issue2) {
   const parts = [
     "# Jira Issue Context",
-    `The user is creating a PRD based on Jira issue ${issue2.key}.`,
     "",
-    "## Issue Details",
+    "## Source Issue",
     `- **Key:** ${issue2.key}`,
     `- **Summary:** ${issue2.summary}`,
     `- **Type:** ${issue2.type}`,
@@ -90834,7 +90855,7 @@ function buildJiraIssueContext(issue2) {
     parts.push("", "## Description", issue2.description);
   }
   if (issue2.acceptanceCriteria) {
-    parts.push("", "## Acceptance Criteria", issue2.acceptanceCriteria);
+    parts.push("", "## Acceptance Criteria from Jira", issue2.acceptanceCriteria);
   }
   if (issue2.linkedIssues && issue2.linkedIssues.length > 0) {
     parts.push("", "## Linked Issues");
@@ -90845,7 +90866,7 @@ function buildJiraIssueContext(issue2) {
       }
     }
   }
-  parts.push("", "## Instructions", "Use this Jira issue context as the foundation for the PRD.", "The PRD should address the requirements in this issue.", 'If the user says "go" or "generate", create the PRD based on the Jira issue details.', "Ask clarifying questions only if critical information is missing.");
+  parts.push("", "## CRITICAL INSTRUCTIONS", "", 'When the user says "go", "generate", or similar, you MUST:', "", "1. Create a PRD with user stories derived from this Jira issue", "2. Break down the Jira ticket into multiple user stories (US-001, US-002, etc.)", "3. Each user story MUST follow this EXACT format:", "", "```", "### US-001: Story Title", "", "As a [user type], I want [goal] so that [benefit].", "", "**Acceptance Criteria:**", "- [ ] First testable criterion", "- [ ] Second testable criterion", "- [ ] Third testable criterion", "", "**Priority:** P1", "```", "", "4. Convert the Jira acceptance criteria into checklist format (- [ ] item)", "5. If the Jira ticket lacks detail, create reasonable user stories based on the summary", "6. Wrap the complete PRD in [PRD]...[/PRD] markers", "", "DO NOT just copy the Jira ticket - transform it into proper user stories!");
   return parts.join(`
 `);
 }
@@ -90885,14 +90906,14 @@ function convertToPrdJson(prd) {
 // src/prd/wizard.ts
 init_prompts();
 // src/prd/parser.ts
-var USER_STORY_HEADER_PATTERN = /^#{2,3}\s+(US-\d{3}|[A-Z]+-\d+):\s*(.+)$/;
+var USER_STORY_HEADER_PATTERN = /^#{2,3}\s+(US-\d{3}|[A-Z]{2,10}-\d+|Story\s*\d+|\d+):\s*(.+)$/i;
 var PRD_TITLE_PATTERN = /^#\s+(?:PRD:\s*)?(.+)$/;
 var BRANCH_NAME_PATTERN = /^>\s*Branch:\s*`?([^`\n]+)`?/m;
 var CREATED_DATE_PATTERN = /^>\s*Generated:\s*(.+)$/m;
-var ACCEPTANCE_CRITERIA_PATTERN = /\*\*Acceptance Criteria:\*\*|^Acceptance Criteria:$/m;
+var ACCEPTANCE_CRITERIA_PATTERN = /\*\*Acceptance Criteria[:\*]*\*?\*?|^#{1,3}\s*Acceptance Criteria:?$|^Acceptance Criteria:$/im;
 var PRIORITY_PATTERN = /\*\*Priority:\*\*\s*P?(\d)/;
 var DEPENDS_ON_PATTERN = /\*\*Depends on:\*\*\s*(.+)/;
-var CHECKLIST_ITEM_PATTERN = /^-\s+\[[\sx]\]\s+(.+)$/;
+var CHECKLIST_ITEM_PATTERN = /^[-*]\s+\[[\sx]\]\s+(.+)$/;
 function extractTitle(markdown) {
   const lines = markdown.split(`
 `);
@@ -91360,7 +91381,7 @@ function buildInitialMessages(jiraIssue) {
   if (linkedIssuesSummary) {
     contextParts.push("", "**Linked Issues:**", linkedIssuesSummary);
   }
-  contextParts.push("", "I have this context from Jira. Would you like me to generate a PRD based on this issue, or would you like to add more details first?", "", "You can:", '- Type "go" or "generate" to create the PRD now', "- Add more context or requirements in your message", "- Ask me questions about the PRD structure");
+  contextParts.push("", "I will break this Jira ticket into user stories (US-001, US-002, etc.) with proper acceptance criteria checklists.", "", "You can:", '- Type **"go"** to generate the PRD now', "- Add more context or requirements first", "- Ask me to focus on specific aspects");
   const welcomeWithJira = {
     role: "assistant",
     content: contextParts.join(`
@@ -94063,4 +94084,4 @@ main2().catch((error48) => {
   process.exit(1);
 });
 
-//# debugId=820A125CAADA2A7F64756E2164756E21
+//# debugId=6DD1655DD9C95DC964756E2164756E21
