@@ -2,10 +2,35 @@
  * ABOUTME: Learn command for ralph-tui.
  * Analyzes a project directory so AI agents understand the codebase structure and conventions.
  * Scans file structure, detects project type, and extracts patterns.
+ * Supports path exclusion via .gitignore, .ralphignore, and binary file detection.
  */
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+
+/**
+ * Binary file extensions to automatically exclude
+ */
+const BINARY_EXTENSIONS = new Set([
+  // Images
+  '.png', '.jpg', '.jpeg', '.gif', '.bmp', '.ico', '.webp', '.svg', '.tiff', '.tif', '.psd',
+  // Audio
+  '.mp3', '.wav', '.ogg', '.flac', '.aac', '.wma', '.m4a',
+  // Video
+  '.mp4', '.avi', '.mov', '.wmv', '.flv', '.mkv', '.webm',
+  // Archives
+  '.zip', '.tar', '.gz', '.rar', '.7z', '.bz2', '.xz', '.tgz',
+  // Documents
+  '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
+  // Fonts
+  '.ttf', '.otf', '.woff', '.woff2', '.eot',
+  // Compiled
+  '.exe', '.dll', '.so', '.dylib', '.o', '.obj', '.class', '.pyc', '.pyo',
+  // Other binary
+  '.bin', '.dat', '.db', '.sqlite', '.sqlite3',
+  // Lock files (not binary but often large and noisy)
+  '.lock',
+]);
 
 /**
  * File type detection patterns
@@ -52,6 +77,275 @@ const IGNORED_DIRS = new Set([
   'env',
   '.env',
 ]);
+
+/**
+ * Parse gitignore-style patterns from a file
+ */
+function parseIgnoreFile(filePath: string): string[] {
+  try {
+    if (!fs.existsSync(filePath)) {
+      return [];
+    }
+    const content = fs.readFileSync(filePath, 'utf-8');
+    return content
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line && !line.startsWith('#'));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Convert a gitignore pattern to a RegExp
+ * Supports basic gitignore patterns: *, **, ?, negation (!), directory-only (/)
+ */
+function gitignorePatternToRegex(pattern: string): { regex: RegExp; negated: boolean; dirOnly: boolean } {
+  let negated = false;
+  let dirOnly = false;
+  let p = pattern;
+
+  // Handle negation
+  if (p.startsWith('!')) {
+    negated = true;
+    p = p.slice(1);
+  }
+
+  // Handle directory-only patterns (trailing /)
+  if (p.endsWith('/')) {
+    dirOnly = true;
+    p = p.slice(0, -1);
+  }
+
+  // Handle leading / (anchored to root)
+  const anchored = p.startsWith('/');
+  if (anchored) {
+    p = p.slice(1);
+  }
+
+  // Escape regex special chars except * and ?
+  let regexStr = p.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+
+  // Convert gitignore patterns to regex
+  // ** matches any path segments
+  regexStr = regexStr.replace(/\*\*/g, '<<<DOUBLESTAR>>>');
+  // * matches anything except /
+  regexStr = regexStr.replace(/\*/g, '[^/]*');
+  // ? matches single char except /
+  regexStr = regexStr.replace(/\?/g, '[^/]');
+  // Restore **
+  regexStr = regexStr.replace(/<<<DOUBLESTAR>>>/g, '.*');
+
+  // If not anchored and doesn't contain /, it can match anywhere
+  if (!anchored && !pattern.includes('/')) {
+    regexStr = `(^|.*/)?${regexStr}`;
+  } else if (anchored) {
+    regexStr = `^${regexStr}`;
+  }
+
+  // Match end of string or directory
+  regexStr = `${regexStr}($|/)`;
+
+  return {
+    regex: new RegExp(regexStr),
+    negated,
+    dirOnly,
+  };
+}
+
+/**
+ * Path exclusion manager that handles gitignore, ralphignore, binary files, and include patterns
+ */
+class PathExclusionManager {
+  private gitignorePatterns: { regex: RegExp; negated: boolean; dirOnly: boolean }[] = [];
+  private ralphignorePatterns: { regex: RegExp; negated: boolean; dirOnly: boolean }[] = [];
+  private includePatterns: RegExp[] = [];
+  private stats: ExclusionStats = {
+    totalExcluded: 0,
+    excludedByGitignore: 0,
+    excludedByRalphignore: 0,
+    excludedAsBinary: 0,
+    excludedByDefault: 0,
+    reincluded: 0,
+    sampleExcludedPaths: [],
+  };
+  private config: ExclusionConfig;
+
+  constructor(rootPath: string, includePatterns: string[] = [], _verbose: boolean = false) {
+    // Parse .gitignore
+    const gitignorePath = path.join(rootPath, '.gitignore');
+    const gitignoreRaw = parseIgnoreFile(gitignorePath);
+    this.gitignorePatterns = gitignoreRaw.map(p => gitignorePatternToRegex(p));
+
+    // Parse .ralphignore
+    const ralphignorePath = path.join(rootPath, '.ralphignore');
+    const ralphignoreRaw = parseIgnoreFile(ralphignorePath);
+    this.ralphignorePatterns = ralphignoreRaw.map(p => gitignorePatternToRegex(p));
+
+    // Parse include patterns
+    this.includePatterns = includePatterns.map(p => {
+      // Convert glob-like patterns to regex
+      let regexStr = p.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+      regexStr = regexStr.replace(/\*\*/g, '.*');
+      regexStr = regexStr.replace(/\*/g, '[^/]*');
+      regexStr = regexStr.replace(/\?/g, '[^/]');
+      return new RegExp(`(^|/)${regexStr}($|/)`);
+    });
+
+    this.config = {
+      gitignorePatterns: gitignoreRaw,
+      ralphignorePatterns: ralphignoreRaw,
+      includePatterns,
+      respectsGitignore: fs.existsSync(gitignorePath),
+      hasRalphignore: fs.existsSync(ralphignorePath),
+    };
+  }
+
+  /**
+   * Check if a path is force-included by --include patterns
+   */
+  private isForceIncluded(relativePath: string): boolean {
+    for (const pattern of this.includePatterns) {
+      if (pattern.test(relativePath)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Check if a path matches gitignore patterns
+   */
+  private matchesGitignore(relativePath: string, isDirectory: boolean): boolean {
+    let excluded = false;
+    for (const { regex, negated, dirOnly } of this.gitignorePatterns) {
+      if (dirOnly && !isDirectory) continue;
+      if (regex.test(relativePath)) {
+        excluded = !negated;
+      }
+    }
+    return excluded;
+  }
+
+  /**
+   * Check if a path matches ralphignore patterns
+   */
+  private matchesRalphignore(relativePath: string, isDirectory: boolean): boolean {
+    let excluded = false;
+    for (const { regex, negated, dirOnly } of this.ralphignorePatterns) {
+      if (dirOnly && !isDirectory) continue;
+      if (regex.test(relativePath)) {
+        excluded = !negated;
+      }
+    }
+    return excluded;
+  }
+
+  /**
+   * Check if a file is binary based on extension
+   */
+  isBinaryFile(filename: string): boolean {
+    const ext = path.extname(filename).toLowerCase();
+    return BINARY_EXTENSIONS.has(ext);
+  }
+
+  /**
+   * Check if a directory should be excluded
+   */
+  shouldExcludeDir(dirName: string, relativePath: string): { excluded: boolean; reason?: string } {
+    // Check force include first
+    if (this.isForceIncluded(relativePath)) {
+      this.stats.reincluded++;
+      return { excluded: false };
+    }
+
+    // Check default ignored directories
+    if (IGNORED_DIRS.has(dirName) || dirName.startsWith('.')) {
+      this.stats.excludedByDefault++;
+      this.stats.totalExcluded++;
+      this.logExclusion(relativePath, 'default');
+      return { excluded: true, reason: 'default' };
+    }
+
+    // Check gitignore
+    if (this.matchesGitignore(relativePath, true)) {
+      this.stats.excludedByGitignore++;
+      this.stats.totalExcluded++;
+      this.logExclusion(relativePath, 'gitignore');
+      return { excluded: true, reason: 'gitignore' };
+    }
+
+    // Check ralphignore
+    if (this.matchesRalphignore(relativePath, true)) {
+      this.stats.excludedByRalphignore++;
+      this.stats.totalExcluded++;
+      this.logExclusion(relativePath, 'ralphignore');
+      return { excluded: true, reason: 'ralphignore' };
+    }
+
+    return { excluded: false };
+  }
+
+  /**
+   * Check if a file should be excluded
+   */
+  shouldExcludeFile(fileName: string, relativePath: string): { excluded: boolean; reason?: string } {
+    // Check force include first
+    if (this.isForceIncluded(relativePath)) {
+      this.stats.reincluded++;
+      return { excluded: false };
+    }
+
+    // Check binary files
+    if (this.isBinaryFile(fileName)) {
+      this.stats.excludedAsBinary++;
+      this.stats.totalExcluded++;
+      this.logExclusion(relativePath, 'binary');
+      return { excluded: true, reason: 'binary' };
+    }
+
+    // Check gitignore
+    if (this.matchesGitignore(relativePath, false)) {
+      this.stats.excludedByGitignore++;
+      this.stats.totalExcluded++;
+      this.logExclusion(relativePath, 'gitignore');
+      return { excluded: true, reason: 'gitignore' };
+    }
+
+    // Check ralphignore
+    if (this.matchesRalphignore(relativePath, false)) {
+      this.stats.excludedByRalphignore++;
+      this.stats.totalExcluded++;
+      this.logExclusion(relativePath, 'ralphignore');
+      return { excluded: true, reason: 'ralphignore' };
+    }
+
+    return { excluded: false };
+  }
+
+  /**
+   * Log an excluded path (for verbose mode)
+   */
+  private logExclusion(relativePath: string, reason: string): void {
+    if (this.stats.sampleExcludedPaths.length < 50) {
+      this.stats.sampleExcludedPaths.push(`${relativePath} (${reason})`);
+    }
+  }
+
+  /**
+   * Get exclusion configuration
+   */
+  getConfig(): ExclusionConfig {
+    return this.config;
+  }
+
+  /**
+   * Get exclusion statistics
+   */
+  getStats(): ExclusionStats {
+    return this.stats;
+  }
+}
 
 /**
  * Project type indicators
@@ -134,6 +428,12 @@ export interface LearnResult {
 
   /** Code patterns detected (deep analysis only) */
   codePatterns?: CodePattern[];
+
+  /** Exclusion configuration used */
+  exclusionConfig?: ExclusionConfig;
+
+  /** Exclusion statistics */
+  exclusionStats?: ExclusionStats;
 }
 
 /**
@@ -172,6 +472,45 @@ export interface LearnArgs {
 
   /** Suppress progress output */
   quiet: boolean;
+
+  /** Patterns to include (overrides exclusions) */
+  include: string[];
+}
+
+/**
+ * Exclusion configuration
+ */
+export interface ExclusionConfig {
+  /** Patterns from .gitignore */
+  gitignorePatterns: string[];
+  /** Patterns from .ralphignore */
+  ralphignorePatterns: string[];
+  /** Include patterns that override exclusions */
+  includePatterns: string[];
+  /** Whether gitignore is being respected */
+  respectsGitignore: boolean;
+  /** Whether ralphignore was found */
+  hasRalphignore: boolean;
+}
+
+/**
+ * Exclusion statistics for verbose output
+ */
+export interface ExclusionStats {
+  /** Total files excluded */
+  totalExcluded: number;
+  /** Files excluded by gitignore */
+  excludedByGitignore: number;
+  /** Files excluded by ralphignore */
+  excludedByRalphignore: number;
+  /** Files excluded as binary */
+  excludedAsBinary: number;
+  /** Files excluded by default patterns */
+  excludedByDefault: number;
+  /** Files re-included by --include flag */
+  reincluded: number;
+  /** Sample excluded paths (for verbose logging) */
+  sampleExcludedPaths: string[];
 }
 
 /**
@@ -286,11 +625,25 @@ Arguments:
 Options:
   --output, -o <path> Custom output file path (default: ./ralph-context.md)
   --depth <level>     Analysis depth: shallow, standard (default), or deep
+  --include <pattern> Include paths matching pattern (overrides exclusions)
+                      Can be specified multiple times
   --json              Output in JSON format (machine-readable)
-  --verbose, -v       Show detailed analysis output
+  --verbose, -v       Show detailed analysis output (includes excluded paths)
   --force, -f         Overwrite existing file without confirmation
   --quiet, -q         Suppress progress output
   -h, --help          Show this help message
+
+Path Exclusions:
+  The following paths are excluded by default:
+  - Directories: node_modules/, .git/, dist/, build/, and other common build/cache dirs
+  - Binary files: images, videos, archives, compiled files, fonts, etc.
+  - Patterns from .gitignore (if present in project root)
+  - Patterns from .ralphignore (if present in project root)
+  
+  Use --include to override exclusions for specific patterns:
+    ralph-tui learn --include "*.min.js" --include "dist/**"
+  
+  Use --verbose to see which paths are being excluded and why.
 
 Depth Levels:
   shallow             Quick structural analysis only (~1-2 seconds)
@@ -346,8 +699,10 @@ Examples:
   ralph-tui learn --depth deep                # Full code pattern analysis
   ralph-tui learn --output ./docs/context.md  # Custom output location
   ralph-tui learn -o "path with spaces/ctx.md" # Path with spaces
+  ralph-tui learn --include "dist/**"         # Include dist folder
+  ralph-tui learn --include "*.min.js"        # Include minified JS files
   ralph-tui learn --json                      # JSON output for scripts
-  ralph-tui learn -v                          # Verbose output
+  ralph-tui learn -v                          # Verbose output (shows exclusions)
   ralph-tui learn --force                     # Overwrite without confirmation
   ralph-tui learn --quiet                     # Suppress progress output
 `);
@@ -365,6 +720,7 @@ export function parseLearnArgs(args: string[]): LearnArgs {
     output: null,
     depth: 'standard',
     quiet: false,
+    include: [],
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -388,6 +744,13 @@ export function parseLearnArgs(args: string[]): LearnArgs {
         process.exit(1);
       }
       result.output = path.resolve(nextArg);
+    } else if (arg === '--include') {
+      const nextArg = args[++i];
+      if (!nextArg || nextArg.startsWith('-')) {
+        console.error('Error: --include requires a pattern argument');
+        process.exit(1);
+      }
+      result.include.push(nextArg);
     } else if (arg === '--depth') {
       const nextArg = args[++i];
       if (!nextArg || nextArg.startsWith('-')) {
@@ -1048,7 +1411,8 @@ async function scanDirectory(
     agentFiles: string[];
   },
   relativePath: string = '',
-  progressReporter?: ProgressReporter
+  progressReporter?: ProgressReporter,
+  exclusionManager?: PathExclusionManager
 ): Promise<boolean> {
   // Check if we've hit the file limit
   if (result.files >= maxFiles) {
@@ -1068,8 +1432,19 @@ async function scanDirectory(
       return true; // truncated
     }
 
+    const entryRelativePath = relativePath ? path.join(relativePath, entry.name) : entry.name;
+
     if (entry.isDirectory()) {
-      if (!shouldIgnoreDir(entry.name)) {
+      // Use exclusion manager if available, otherwise fall back to basic check
+      let shouldExclude = false;
+      if (exclusionManager) {
+        const exclusionResult = exclusionManager.shouldExcludeDir(entry.name, entryRelativePath);
+        shouldExclude = exclusionResult.excluded;
+      } else {
+        shouldExclude = shouldIgnoreDir(entry.name);
+      }
+
+      if (!shouldExclude) {
         result.directories++;
         // Update progress
         if (progressReporter) {
@@ -1079,30 +1454,40 @@ async function scanDirectory(
           path.join(dirPath, entry.name),
           maxFiles,
           result,
-          path.join(relativePath, entry.name),
-          progressReporter
+          entryRelativePath,
+          progressReporter,
+          exclusionManager
         );
         if (truncated) {
           return true;
         }
       }
     } else if (entry.isFile()) {
-      result.files++;
-
-      // Track file type
-      const fileType = detectFileType(entry.name);
-      if (fileType) {
-        result.filesByType[fileType] = (result.filesByType[fileType] || 0) + 1;
+      // Check file exclusion
+      let shouldExclude = false;
+      if (exclusionManager) {
+        const exclusionResult = exclusionManager.shouldExcludeFile(entry.name, entryRelativePath);
+        shouldExclude = exclusionResult.excluded;
       }
 
-      // Track AGENTS.md files
-      if (entry.name === 'AGENTS.md') {
-        result.agentFiles.push(path.join(relativePath, entry.name));
-      }
-      
-      // Update progress periodically (every 100 files)
-      if (progressReporter && result.files % 100 === 0) {
-        progressReporter.updateCounts(result.files, result.directories);
+      if (!shouldExclude) {
+        result.files++;
+
+        // Track file type
+        const fileType = detectFileType(entry.name);
+        if (fileType) {
+          result.filesByType[fileType] = (result.filesByType[fileType] || 0) + 1;
+        }
+
+        // Track AGENTS.md files
+        if (entry.name === 'AGENTS.md') {
+          result.agentFiles.push(entryRelativePath);
+        }
+        
+        // Update progress periodically (every 100 files)
+        if (progressReporter && result.files % 100 === 0) {
+          progressReporter.updateCounts(result.files, result.directories);
+        }
       }
     }
   }
@@ -1177,7 +1562,8 @@ function detectCodePatternsInFile(_filePath: string, content: string): { pattern
 async function performDeepAnalysis(
   rootPath: string,
   maxFilesToAnalyze: number = 500,
-  progressReporter?: ProgressReporter
+  progressReporter?: ProgressReporter,
+  exclusionManager?: PathExclusionManager
 ): Promise<CodePattern[]> {
   const patternMap = new Map<string, { description: string; files: string[] }>();
   let filesAnalyzed = 0;
@@ -1195,40 +1581,60 @@ async function performDeepAnalysis(
     for (const entry of entries) {
       if (filesAnalyzed >= maxFilesToAnalyze) return;
 
+      const entryRelativePath = relativePath ? path.join(relativePath, entry.name) : entry.name;
+
       if (entry.isDirectory()) {
-        if (!shouldIgnoreDir(entry.name)) {
+        // Use exclusion manager if available
+        let shouldExclude = false;
+        if (exclusionManager) {
+          const exclusionResult = exclusionManager.shouldExcludeDir(entry.name, entryRelativePath);
+          shouldExclude = exclusionResult.excluded;
+        } else {
+          shouldExclude = shouldIgnoreDir(entry.name);
+        }
+
+        if (!shouldExclude) {
           await analyzeDir(
             path.join(dirPath, entry.name),
-            path.join(relativePath, entry.name)
+            entryRelativePath
           );
         }
       } else if (entry.isFile()) {
-        // Only analyze source code files
-        const ext = path.extname(entry.name);
-        if (['.ts', '.tsx', '.js', '.jsx', '.py', '.rb', '.java', '.go'].includes(ext)) {
-          try {
-            const filePath = path.join(dirPath, entry.name);
-            const content = fs.readFileSync(filePath, 'utf-8');
-            const patterns = detectCodePatternsInFile(filePath, content);
-            
-            for (const { pattern, description } of patterns) {
-              if (!patternMap.has(pattern)) {
-                patternMap.set(pattern, { description, files: [] });
+        // Check file exclusion
+        let shouldExclude = false;
+        if (exclusionManager) {
+          const exclusionResult = exclusionManager.shouldExcludeFile(entry.name, entryRelativePath);
+          shouldExclude = exclusionResult.excluded;
+        }
+
+        if (!shouldExclude) {
+          // Only analyze source code files
+          const ext = path.extname(entry.name);
+          if (['.ts', '.tsx', '.js', '.jsx', '.py', '.rb', '.java', '.go'].includes(ext)) {
+            try {
+              const filePath = path.join(dirPath, entry.name);
+              const content = fs.readFileSync(filePath, 'utf-8');
+              const patterns = detectCodePatternsInFile(filePath, content);
+              
+              for (const { pattern, description } of patterns) {
+                if (!patternMap.has(pattern)) {
+                  patternMap.set(pattern, { description, files: [] });
+                }
+                const existing = patternMap.get(pattern)!;
+                if (existing.files.length < 10) { // Limit files per pattern
+                  existing.files.push(entryRelativePath);
+                }
               }
-              const existing = patternMap.get(pattern)!;
-              if (existing.files.length < 10) { // Limit files per pattern
-                existing.files.push(path.join(relativePath, entry.name));
+              
+              filesAnalyzed++;
+              
+              // Update progress periodically
+              if (progressReporter && filesAnalyzed % 50 === 0) {
+                progressReporter.updateCounts(filesAnalyzed, 0);
               }
+            } catch {
+              // Skip files that can't be read
             }
-            
-            filesAnalyzed++;
-            
-            // Update progress periodically
-            if (progressReporter && filesAnalyzed % 50 === 0) {
-              progressReporter.updateCounts(filesAnalyzed, 0);
-            }
-          } catch {
-            // Skip files that can't be read
           }
         }
       }
@@ -1260,7 +1666,9 @@ async function performDeepAnalysis(
 export async function analyzeProject(
   rootPath: string, 
   depth: DepthLevel = 'standard',
-  progressReporter?: ProgressReporter
+  progressReporter?: ProgressReporter,
+  includePatterns: string[] = [],
+  verbose: boolean = false
 ): Promise<LearnResult> {
   const startTime = Date.now();
   const maxFiles = 10000;
@@ -1274,6 +1682,9 @@ export async function analyzeProject(
   if (!stats.isDirectory()) {
     throw new Error(`Path is not a directory: ${rootPath}`);
   }
+
+  // Create exclusion manager
+  const exclusionManager = new PathExclusionManager(rootPath, includePatterns, verbose);
 
   // Get top-level contents
   const topLevelEntries = fs.readdirSync(rootPath, { withFileTypes: true });
@@ -1312,18 +1723,19 @@ export async function analyzeProject(
 
   // Shallow: Quick structural scan only
   if (depth === 'shallow') {
-    // Just count top-level items
-    scanResult.files = topLevelFiles.length;
-    scanResult.directories = topLevelDirs.length;
-    directoryTree = topLevelDirs.map(d => `${d}/`).concat(topLevelFiles).slice(0, 20).join('\n');
-    
-    // Basic file type detection from top level only
+    // Just count top-level items (filter out excluded files)
     for (const file of topLevelFiles) {
-      const fileType = detectFileType(file);
-      if (fileType) {
-        scanResult.filesByType[fileType] = (scanResult.filesByType[fileType] || 0) + 1;
+      const exclusionResult = exclusionManager.shouldExcludeFile(file, file);
+      if (!exclusionResult.excluded) {
+        scanResult.files++;
+        const fileType = detectFileType(file);
+        if (fileType) {
+          scanResult.filesByType[fileType] = (scanResult.filesByType[fileType] || 0) + 1;
+        }
       }
     }
+    scanResult.directories = topLevelDirs.length;
+    directoryTree = topLevelDirs.map(d => `${d}/`).concat(topLevelFiles).slice(0, 20).join('\n');
   }
 
   // Standard: Full structure + dependencies + patterns
@@ -1336,8 +1748,8 @@ export async function analyzeProject(
     architecturalPatterns = detectArchitecturalPatterns(rootPath, topLevelFiles, topLevelDirs);
     directoryTree = buildDirectoryTree(rootPath);
     
-    // Full file scan
-    await scanDirectory(rootPath, maxFiles, scanResult, '', progressReporter);
+    // Full file scan with exclusion manager
+    await scanDirectory(rootPath, maxFiles, scanResult, '', progressReporter, exclusionManager);
   }
 
   // Deep: Code pattern analysis
@@ -1345,7 +1757,7 @@ export async function analyzeProject(
     if (progressReporter) {
       progressReporter.setPhase('Analyzing code patterns...');
     }
-    codePatterns = await performDeepAnalysis(rootPath, 500, progressReporter);
+    codePatterns = await performDeepAnalysis(rootPath, 500, progressReporter, exclusionManager);
   }
 
   const truncated = scanResult.files >= maxFiles;
@@ -1367,6 +1779,8 @@ export async function analyzeProject(
     directoryTree,
     depthLevel: depth,
     codePatterns,
+    exclusionConfig: exclusionManager.getConfig(),
+    exclusionStats: exclusionManager.getStats(),
   };
 }
 
@@ -1444,6 +1858,53 @@ function printHumanResult(result: LearnResult, verbose: boolean): void {
     console.log('');
   }
 
+  // Exclusion information (verbose mode)
+  if (verbose && result.exclusionStats) {
+    const stats = result.exclusionStats;
+    const config = result.exclusionConfig;
+    
+    console.log('  Path Exclusions:');
+    console.log(`    Total excluded:      ${stats.totalExcluded.toLocaleString()}`);
+    if (stats.excludedByDefault > 0) {
+      console.log(`    By default rules:    ${stats.excludedByDefault.toLocaleString()}`);
+    }
+    if (stats.excludedByGitignore > 0) {
+      console.log(`    By .gitignore:       ${stats.excludedByGitignore.toLocaleString()}`);
+    }
+    if (stats.excludedByRalphignore > 0) {
+      console.log(`    By .ralphignore:     ${stats.excludedByRalphignore.toLocaleString()}`);
+    }
+    if (stats.excludedAsBinary > 0) {
+      console.log(`    Binary files:        ${stats.excludedAsBinary.toLocaleString()}`);
+    }
+    if (stats.reincluded > 0) {
+      console.log(`    Re-included:         ${stats.reincluded.toLocaleString()}`);
+    }
+    console.log('');
+
+    if (config) {
+      console.log('  Exclusion Sources:');
+      console.log(`    .gitignore:          ${config.respectsGitignore ? 'found (' + config.gitignorePatterns.length + ' patterns)' : 'not found'}`);
+      console.log(`    .ralphignore:        ${config.hasRalphignore ? 'found (' + config.ralphignorePatterns.length + ' patterns)' : 'not found'}`);
+      if (config.includePatterns.length > 0) {
+        console.log(`    --include patterns:  ${config.includePatterns.length}`);
+      }
+      console.log('');
+    }
+
+    // Show sample excluded paths
+    if (stats.sampleExcludedPaths.length > 0) {
+      console.log('  Sample Excluded Paths:');
+      for (const excludedPath of stats.sampleExcludedPaths.slice(0, 15)) {
+        console.log(`    • ${excludedPath}`);
+      }
+      if (stats.sampleExcludedPaths.length > 15) {
+        console.log(`    ... and ${stats.sampleExcludedPaths.length - 15} more`);
+      }
+      console.log('');
+    }
+  }
+
   console.log('───────────────────────────────────────────────────────────────');
   console.log('  Analysis complete. AI agents can now better understand');
   console.log('  this codebase structure and conventions.');
@@ -1466,6 +1927,9 @@ export async function executeLearnCommand(args: string[]): Promise<void> {
     if (!parsedArgs.json && !parsedArgs.quiet) {
       console.log(`Analyzing project at: ${parsedArgs.path}`);
       console.log(`Depth level: ${parsedArgs.depth}`);
+      if (parsedArgs.include.length > 0) {
+        console.log(`Include patterns: ${parsedArgs.include.join(', ')}`);
+      }
       console.log('');
     }
 
@@ -1473,7 +1937,13 @@ export async function executeLearnCommand(args: string[]): Promise<void> {
     progressReporter.start();
     progressReporter.setPhase('Initializing...');
 
-    const result = await analyzeProject(parsedArgs.path, parsedArgs.depth, progressReporter);
+    const result = await analyzeProject(
+      parsedArgs.path, 
+      parsedArgs.depth, 
+      progressReporter,
+      parsedArgs.include,
+      parsedArgs.verbose
+    );
 
     // Stop progress reporter and set generating phase
     progressReporter.setPhase('Generating context file...');
