@@ -169,6 +169,106 @@ export interface LearnArgs {
 
   /** Analysis depth level */
   depth: DepthLevel;
+
+  /** Suppress progress output */
+  quiet: boolean;
+}
+
+/**
+ * Progress callback for reporting analysis progress
+ */
+export type ProgressCallback = (phase: string, detail: string) => void;
+
+/**
+ * Progress reporter that handles timing and output
+ */
+class ProgressReporter {
+  private startTime: number;
+  private lastUpdate: number;
+  private quiet: boolean;
+  private currentPhase: string = '';
+  private fileCount: number = 0;
+  private dirCount: number = 0;
+  private timer: ReturnType<typeof setInterval> | null = null;
+  private operationStart: number = 0;
+  private showProgress: boolean = false;
+
+  constructor(quiet: boolean) {
+    this.quiet = quiet;
+    this.startTime = Date.now();
+    this.lastUpdate = this.startTime;
+    this.operationStart = this.startTime;
+  }
+
+  /**
+   * Start the progress reporter - will show progress after 2 seconds
+   */
+  start(): void {
+    if (this.quiet) return;
+    
+    this.operationStart = Date.now();
+    this.timer = setInterval(() => {
+      const elapsed = Date.now() - this.operationStart;
+      if (elapsed >= 2000 && !this.showProgress) {
+        this.showProgress = true;
+        this.printProgress();
+      } else if (this.showProgress) {
+        this.printProgress();
+      }
+    }, 2000);
+  }
+
+  /**
+   * Update the current phase
+   */
+  setPhase(phase: string): void {
+    this.currentPhase = phase;
+    this.lastUpdate = Date.now();
+    if (this.showProgress && !this.quiet) {
+      this.printProgress();
+    }
+  }
+
+  /**
+   * Update file/directory counts
+   */
+  updateCounts(files: number, dirs: number): void {
+    this.fileCount = files;
+    this.dirCount = dirs;
+    const now = Date.now();
+    // Only print if 2 seconds have passed since last update
+    if (this.showProgress && !this.quiet && now - this.lastUpdate >= 2000) {
+      this.lastUpdate = now;
+      this.printProgress();
+    }
+  }
+
+  /**
+   * Print the current progress
+   */
+  private printProgress(): void {
+    const elapsed = ((Date.now() - this.operationStart) / 1000).toFixed(1);
+    let message = `\r⏳ [${elapsed}s] ${this.currentPhase}`;
+    if (this.currentPhase.toLowerCase().includes('scanning') && this.fileCount > 0) {
+      message += ` - ${this.fileCount.toLocaleString()} files, ${this.dirCount.toLocaleString()} directories`;
+    }
+    // Clear to end of line and print
+    process.stdout.write(`${message}        `);
+  }
+
+  /**
+   * Stop the progress reporter and clear the line
+   */
+  stop(): void {
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
+    if (this.showProgress && !this.quiet) {
+      // Clear the progress line
+      process.stdout.write('\r' + ' '.repeat(80) + '\r');
+    }
+  }
 }
 
 /**
@@ -189,6 +289,7 @@ Options:
   --json              Output in JSON format (machine-readable)
   --verbose, -v       Show detailed analysis output
   --force, -f         Overwrite existing file without confirmation
+  --quiet, -q         Suppress progress output
   -h, --help          Show this help message
 
 Depth Levels:
@@ -210,6 +311,11 @@ Depth Levels:
                       - Import/export relationship analysis
                       - Test coverage hints
                       - Detailed AGENTS.md file discovery
+
+Progress Indicators:
+  Progress is automatically shown for operations taking longer than 2 seconds.
+  The current phase (scanning, analyzing, generating) and file count are displayed.
+  Use --quiet to suppress progress output.
 
 Description:
   Analyzes the project directory so AI agents understand the codebase
@@ -243,6 +349,7 @@ Examples:
   ralph-tui learn --json                      # JSON output for scripts
   ralph-tui learn -v                          # Verbose output
   ralph-tui learn --force                     # Overwrite without confirmation
+  ralph-tui learn --quiet                     # Suppress progress output
 `);
 }
 
@@ -257,6 +364,7 @@ export function parseLearnArgs(args: string[]): LearnArgs {
     force: false,
     output: null,
     depth: 'standard',
+    quiet: false,
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -271,6 +379,8 @@ export function parseLearnArgs(args: string[]): LearnArgs {
       result.verbose = true;
     } else if (arg === '--force' || arg === '-f') {
       result.force = true;
+    } else if (arg === '--quiet' || arg === '-q') {
+      result.quiet = true;
     } else if (arg === '--output' || arg === '-o') {
       const nextArg = args[++i];
       if (!nextArg || nextArg.startsWith('-')) {
@@ -937,7 +1047,8 @@ async function scanDirectory(
     filesByType: Record<string, number>;
     agentFiles: string[];
   },
-  relativePath: string = ''
+  relativePath: string = '',
+  progressReporter?: ProgressReporter
 ): Promise<boolean> {
   // Check if we've hit the file limit
   if (result.files >= maxFiles) {
@@ -960,11 +1071,16 @@ async function scanDirectory(
     if (entry.isDirectory()) {
       if (!shouldIgnoreDir(entry.name)) {
         result.directories++;
+        // Update progress
+        if (progressReporter) {
+          progressReporter.updateCounts(result.files, result.directories);
+        }
         const truncated = await scanDirectory(
           path.join(dirPath, entry.name),
           maxFiles,
           result,
-          path.join(relativePath, entry.name)
+          path.join(relativePath, entry.name),
+          progressReporter
         );
         if (truncated) {
           return true;
@@ -982,6 +1098,11 @@ async function scanDirectory(
       // Track AGENTS.md files
       if (entry.name === 'AGENTS.md') {
         result.agentFiles.push(path.join(relativePath, entry.name));
+      }
+      
+      // Update progress periodically (every 100 files)
+      if (progressReporter && result.files % 100 === 0) {
+        progressReporter.updateCounts(result.files, result.directories);
       }
     }
   }
@@ -1038,7 +1159,7 @@ const CODE_PATTERN_REGEXES: Record<string, { regex: RegExp; description: string 
 /**
  * Detect code patterns in a file (for deep analysis)
  */
-function detectCodePatternsInFile(filePath: string, content: string): { pattern: string; description: string }[] {
+function detectCodePatternsInFile(_filePath: string, content: string): { pattern: string; description: string }[] {
   const detected: { pattern: string; description: string }[] = [];
   
   for (const [patternName, { regex, description }] of Object.entries(CODE_PATTERN_REGEXES)) {
@@ -1055,7 +1176,8 @@ function detectCodePatternsInFile(filePath: string, content: string): { pattern:
  */
 async function performDeepAnalysis(
   rootPath: string,
-  maxFilesToAnalyze: number = 500
+  maxFilesToAnalyze: number = 500,
+  progressReporter?: ProgressReporter
 ): Promise<CodePattern[]> {
   const patternMap = new Map<string, { description: string; files: string[] }>();
   let filesAnalyzed = 0;
@@ -1100,6 +1222,11 @@ async function performDeepAnalysis(
             }
             
             filesAnalyzed++;
+            
+            // Update progress periodically
+            if (progressReporter && filesAnalyzed % 50 === 0) {
+              progressReporter.updateCounts(filesAnalyzed, 0);
+            }
           } catch {
             // Skip files that can't be read
           }
@@ -1130,7 +1257,11 @@ async function performDeepAnalysis(
 /**
  * Analyze a project directory
  */
-export async function analyzeProject(rootPath: string, depth: DepthLevel = 'standard'): Promise<LearnResult> {
+export async function analyzeProject(
+  rootPath: string, 
+  depth: DepthLevel = 'standard',
+  progressReporter?: ProgressReporter
+): Promise<LearnResult> {
   const startTime = Date.now();
   const maxFiles = 10000;
 
@@ -1197,18 +1328,24 @@ export async function analyzeProject(rootPath: string, depth: DepthLevel = 'stan
 
   // Standard: Full structure + dependencies + patterns
   if (depth === 'standard' || depth === 'deep') {
+    if (progressReporter) {
+      progressReporter.setPhase('Scanning files...');
+    }
     conventions = detectConventions(rootPath, topLevelFiles);
     dependencies = parseDependencies(rootPath, topLevelFiles);
     architecturalPatterns = detectArchitecturalPatterns(rootPath, topLevelFiles, topLevelDirs);
     directoryTree = buildDirectoryTree(rootPath);
     
     // Full file scan
-    await scanDirectory(rootPath, maxFiles, scanResult);
+    await scanDirectory(rootPath, maxFiles, scanResult, '', progressReporter);
   }
 
   // Deep: Code pattern analysis
   if (depth === 'deep') {
-    codePatterns = await performDeepAnalysis(rootPath);
+    if (progressReporter) {
+      progressReporter.setPhase('Analyzing code patterns...');
+    }
+    codePatterns = await performDeepAnalysis(rootPath, 500, progressReporter);
   }
 
   const truncated = scanResult.files >= maxFiles;
@@ -1322,14 +1459,25 @@ export async function executeLearnCommand(args: string[]): Promise<void> {
   // Use custom output path or default to ralph-context.md in analyzed directory
   const contextFilePath = parsedArgs.output || path.join(parsedArgs.path, 'ralph-context.md');
 
+  // Create progress reporter (quiet for JSON mode or if --quiet flag)
+  const progressReporter = new ProgressReporter(parsedArgs.quiet || parsedArgs.json);
+
   try {
-    if (!parsedArgs.json) {
+    if (!parsedArgs.json && !parsedArgs.quiet) {
       console.log(`Analyzing project at: ${parsedArgs.path}`);
       console.log(`Depth level: ${parsedArgs.depth}`);
       console.log('');
     }
 
-    const result = await analyzeProject(parsedArgs.path, parsedArgs.depth);
+    // Start progress reporting
+    progressReporter.start();
+    progressReporter.setPhase('Initializing...');
+
+    const result = await analyzeProject(parsedArgs.path, parsedArgs.depth, progressReporter);
+
+    // Stop progress reporter and set generating phase
+    progressReporter.setPhase('Generating context file...');
+    progressReporter.stop();
 
     // Generate and write context file (unless JSON output mode)
     if (!parsedArgs.json) {
@@ -1374,7 +1522,7 @@ export async function executeLearnCommand(args: string[]): Promise<void> {
       
       printHumanResult(result, parsedArgs.verbose);
       
-      // Show file info
+      // Show file info (final summary with path and size - AC5)
       const stats = fs.statSync(contextFilePath);
       console.log('═══════════════════════════════════════════════════════════════');
       console.log('                      Context File Generated                    ');
@@ -1392,6 +1540,8 @@ export async function executeLearnCommand(args: string[]): Promise<void> {
 
     process.exit(0);
   } catch (error) {
+    // Stop progress reporter on error
+    progressReporter.stop();
     if (parsedArgs.json) {
       console.log(JSON.stringify({
         error: true,
