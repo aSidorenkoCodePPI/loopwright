@@ -1,6 +1,9 @@
 {
-  "name": "ralph-tui",
-  "version": "0.1.8",
+  "name": "@asidorenkocodeppi/ralph-tui",
+  "version": "0.1.9",
+  "publishConfig": {
+    "access": "public"
+  },
   "description": "Ralph TUI - AI Agent Loop Orchestrator",
   "type": "module",
   "main": "./dist/index.js",

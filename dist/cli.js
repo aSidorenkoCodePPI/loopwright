@@ -37098,8 +37098,11 @@ var require_node_notifier = __commonJS((exports, module2) => {
 // package.json
 var require_package = __commonJS((exports, module2) => {
   module2.exports = {
-    name: "ralph-tui",
-    version: "0.1.7",
+    name: "@asidorenkocodeppi/ralph-tui",
+    version: "0.1.9",
+    publishConfig: {
+      access: "public"
+    },
     description: "Ralph TUI - AI Agent Loop Orchestrator",
     type: "module",
     main: "./dist/index.js",
@@ -93262,4 +93265,4 @@ main2().catch((error48) => {
   process.exit(1);
 });
 
-//# debugId=7F54C7922941498264756E2164756E21
+//# debugId=482674D3D688533E64756E2164756E21
