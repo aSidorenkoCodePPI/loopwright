@@ -1919,6 +1919,10 @@ export async function analyzeProject(
   const truncated = scanResult.files >= maxFiles;
   const durationMs = Date.now() - startTime;
 
+  // Count skipped and failed files from warnings
+  const skippedFiles = scanResult.warnings.filter(w => w.type === 'inaccessible').length;
+  const failedFiles = scanResult.warnings.filter(w => w.type === 'read_error' || w.type === 'parse_error').length;
+
   return {
     rootPath,
     totalFiles: scanResult.files,
@@ -1937,6 +1941,9 @@ export async function analyzeProject(
     codePatterns,
     exclusionConfig: exclusionManager.getConfig(),
     exclusionStats: exclusionManager.getStats(),
+    warnings: scanResult.warnings.length > 0 ? scanResult.warnings : undefined,
+    skippedFiles: skippedFiles > 0 ? skippedFiles : undefined,
+    failedFiles: failedFiles > 0 ? failedFiles : undefined,
   };
 }
 
@@ -2061,6 +2068,31 @@ function printHumanResult(result: LearnResult, verbose: boolean): void {
     }
   }
 
+  // Warnings summary (skipped/failed files)
+  if (result.warnings && result.warnings.length > 0) {
+    console.log('  ⚠️  Warnings:');
+    if (result.skippedFiles && result.skippedFiles > 0) {
+      console.log(`    Inaccessible directories: ${result.skippedFiles}`);
+    }
+    if (result.failedFiles && result.failedFiles > 0) {
+      console.log(`    Failed to read/parse:     ${result.failedFiles}`);
+    }
+    
+    // Show individual warnings in verbose mode
+    if (verbose) {
+      console.log('');
+      console.log('  Warning Details:');
+      for (const warning of result.warnings.slice(0, 20)) {
+        console.log(`    • [${warning.type}] ${warning.filePath}`);
+        console.log(`      ${warning.reason}`);
+      }
+      if (result.warnings.length > 20) {
+        console.log(`    ... and ${result.warnings.length - 20} more warnings`);
+      }
+    }
+    console.log('');
+  }
+
   console.log('───────────────────────────────────────────────────────────────');
   console.log('  Analysis complete. AI agents can now better understand');
   console.log('  this codebase structure and conventions.');
@@ -2162,6 +2194,14 @@ export async function executeLearnCommand(args: string[]): Promise<void> {
       console.log('');
     } else {
       console.log(JSON.stringify(result, null, 2));
+    }
+
+    // Exit with error code 2 if --strict is set and there are warnings
+    if (parsedArgs.strict && result.warnings && result.warnings.length > 0) {
+      if (!parsedArgs.json) {
+        console.log('⚠️  Exiting with error code 2 due to --strict flag and warnings.');
+      }
+      process.exit(2);
     }
 
     process.exit(0);
