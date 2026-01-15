@@ -434,6 +434,15 @@ export interface LearnResult {
 
   /** Exclusion statistics */
   exclusionStats?: ExclusionStats;
+
+  /** Analysis warnings (skipped files, parse errors, etc.) */
+  warnings?: AnalysisWarning[];
+
+  /** Count of files skipped due to errors */
+  skippedFiles?: number;
+
+  /** Count of files that failed to parse */
+  failedFiles?: number;
 }
 
 /**
@@ -475,6 +484,9 @@ export interface LearnArgs {
 
   /** Patterns to include (overrides exclusions) */
   include: string[];
+
+  /** Exit with error on any warning */
+  strict: boolean;
 }
 
 /**
@@ -511,6 +523,23 @@ export interface ExclusionStats {
   reincluded: number;
   /** Sample excluded paths (for verbose logging) */
   sampleExcludedPaths: string[];
+}
+
+/**
+ * Analysis warning types
+ */
+export type WarningType = 'inaccessible' | 'parse_error' | 'read_error';
+
+/**
+ * Analysis warning structure
+ */
+export interface AnalysisWarning {
+  /** Type of warning */
+  type: WarningType;
+  /** File path that caused the warning */
+  filePath: string;
+  /** Human-readable reason */
+  reason: string;
 }
 
 /**
@@ -631,6 +660,7 @@ Options:
   --verbose, -v       Show detailed analysis output (includes excluded paths)
   --force, -f         Overwrite existing file without confirmation
   --quiet, -q         Suppress progress output
+  --strict            Exit with error on any warning (inaccessible/failed files)
   -h, --help          Show this help message
 
 Path Exclusions:
@@ -670,6 +700,12 @@ Progress Indicators:
   The current phase (scanning, analyzing, generating) and file count are displayed.
   Use --quiet to suppress progress output.
 
+Error Handling:
+  Inaccessible files and parsing failures are logged as warnings but don't
+  stop the analysis. The final summary shows skipped/failed file counts.
+  Use --verbose to see detailed warning information.
+  Use --strict to exit with error code 2 if any warnings occur.
+
 Description:
   Analyzes the project directory so AI agents understand the codebase
   structure and conventions. Generates a ralph-context.md file with:
@@ -689,8 +725,10 @@ Output:
   If the file exists, prompts for confirmation unless --force is used.
 
 Exit Codes:
-  0    Analysis completed successfully
+  0    Analysis completed successfully (no warnings)
   1    Analysis failed (invalid path, permission error, etc.)
+  2    Analysis completed with warnings (partial success)
+       Only returned if --strict is used
 
 Examples:
   ralph-tui learn                             # Analyze current directory
@@ -705,6 +743,7 @@ Examples:
   ralph-tui learn -v                          # Verbose output (shows exclusions)
   ralph-tui learn --force                     # Overwrite without confirmation
   ralph-tui learn --quiet                     # Suppress progress output
+  ralph-tui learn --strict                    # Fail on any warning
 `);
 }
 
@@ -721,6 +760,7 @@ export function parseLearnArgs(args: string[]): LearnArgs {
     depth: 'standard',
     quiet: false,
     include: [],
+    strict: false,
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -737,6 +777,8 @@ export function parseLearnArgs(args: string[]): LearnArgs {
       result.force = true;
     } else if (arg === '--quiet' || arg === '-q') {
       result.quiet = true;
+    } else if (arg === '--strict') {
+      result.strict = true;
     } else if (arg === '--output' || arg === '-o') {
       const nextArg = args[++i];
       if (!nextArg || nextArg.startsWith('-')) {
@@ -1233,8 +1275,16 @@ function generateContextMarkdown(result: LearnResult): string {
   lines.push(`- **Total Directories**: ${result.totalDirectories.toLocaleString()}`);
   lines.push('');
 
-  // Languages and Frameworks
-  lines.push('## Languages and Frameworks');
+  // Technology Stack Summary (consolidates languages, frameworks, project type)
+  lines.push('## Technology Stack');
+  lines.push('');
+  lines.push('### Project Type');
+  lines.push('');
+  lines.push(`This is a **${result.projectTypes.join(', ')}** project.`);
+  lines.push('');
+  
+  // Primary languages
+  lines.push('### Primary Languages');
   lines.push('');
   if (Object.keys(result.filesByType).length > 0) {
     const sortedTypes = Object.entries(result.filesByType)
@@ -1247,6 +1297,39 @@ function generateContextMarkdown(result: LearnResult): string {
     lines.push('');
   } else {
     lines.push('*No specific language files detected.*');
+    lines.push('');
+  }
+
+  // Frameworks and Tools detected from config files
+  const detectedFrameworks: string[] = [];
+  if (result.projectTypes.includes('node')) detectedFrameworks.push('Node.js');
+  if (result.projectTypes.includes('python')) detectedFrameworks.push('Python');
+  if (result.projectTypes.includes('rust')) detectedFrameworks.push('Rust');
+  if (result.projectTypes.includes('go')) detectedFrameworks.push('Go');
+  if (result.projectTypes.includes('java')) detectedFrameworks.push('Java');
+  if (result.projectTypes.includes('dotnet')) detectedFrameworks.push('.NET');
+  if (result.projectTypes.includes('ruby')) detectedFrameworks.push('Ruby');
+  if (result.projectTypes.includes('php')) detectedFrameworks.push('PHP');
+  
+  // Add detected conventions as frameworks/tools
+  for (const conv of result.conventions) {
+    if (conv.includes('TypeScript')) detectedFrameworks.push('TypeScript');
+    if (conv.includes('Jest')) detectedFrameworks.push('Jest');
+    if (conv.includes('Vitest')) detectedFrameworks.push('Vitest');
+    if (conv.includes('Pytest')) detectedFrameworks.push('Pytest');
+    if (conv.includes('ESLint')) detectedFrameworks.push('ESLint');
+    if (conv.includes('Prettier')) detectedFrameworks.push('Prettier');
+    if (conv.includes('Docker')) detectedFrameworks.push('Docker');
+    if (conv.includes('GitHub Actions')) detectedFrameworks.push('GitHub Actions');
+    if (conv.includes('GitLab CI')) detectedFrameworks.push('GitLab CI');
+  }
+  
+  if (detectedFrameworks.length > 0) {
+    lines.push('### Detected Frameworks and Tools');
+    lines.push('');
+    for (const fw of detectedFrameworks) {
+      lines.push(`- ${fw}`);
+    }
     lines.push('');
   }
 
@@ -1409,6 +1492,7 @@ async function scanDirectory(
     directories: number;
     filesByType: Record<string, number>;
     agentFiles: string[];
+    warnings: AnalysisWarning[];
   },
   relativePath: string = '',
   progressReporter?: ProgressReporter,
@@ -1422,8 +1506,14 @@ async function scanDirectory(
   let entries: fs.Dirent[];
   try {
     entries = fs.readdirSync(dirPath, { withFileTypes: true });
-  } catch {
-    // Permission denied or other error - skip this directory
+  } catch (err) {
+    // Permission denied or other error - log warning and skip this directory
+    const reason = err instanceof Error ? err.message : String(err);
+    result.warnings.push({
+      type: 'inaccessible',
+      filePath: relativePath || dirPath,
+      reason: `Cannot access directory: ${reason}`,
+    });
     return false;
   }
 
@@ -1561,6 +1651,7 @@ function detectCodePatternsInFile(_filePath: string, content: string): { pattern
  */
 async function performDeepAnalysis(
   rootPath: string,
+  warnings: AnalysisWarning[],
   maxFilesToAnalyze: number = 500,
   progressReporter?: ProgressReporter,
   exclusionManager?: PathExclusionManager
@@ -1574,7 +1665,14 @@ async function performDeepAnalysis(
     let entries: fs.Dirent[];
     try {
       entries = fs.readdirSync(dirPath, { withFileTypes: true });
-    } catch {
+    } catch (err) {
+      // Log warning for inaccessible directory
+      const reason = err instanceof Error ? err.message : String(err);
+      warnings.push({
+        type: 'inaccessible',
+        filePath: relativePath || dirPath,
+        reason: `Cannot access directory: ${reason}`,
+      });
       return;
     }
 
@@ -1611,8 +1709,8 @@ async function performDeepAnalysis(
           // Only analyze source code files
           const ext = path.extname(entry.name);
           if (['.ts', '.tsx', '.js', '.jsx', '.py', '.rb', '.java', '.go'].includes(ext)) {
+            const filePath = path.join(dirPath, entry.name);
             try {
-              const filePath = path.join(dirPath, entry.name);
               const content = fs.readFileSync(filePath, 'utf-8');
               const patterns = detectCodePatternsInFile(filePath, content);
               
@@ -1632,8 +1730,14 @@ async function performDeepAnalysis(
               if (progressReporter && filesAnalyzed % 50 === 0) {
                 progressReporter.updateCounts(filesAnalyzed, 0);
               }
-            } catch {
-              // Skip files that can't be read
+            } catch (err) {
+              // Log warning for file read/parse error
+              const reason = err instanceof Error ? err.message : String(err);
+              warnings.push({
+                type: 'read_error',
+                filePath: entryRelativePath,
+                reason: `Cannot read file: ${reason}`,
+              });
             }
           }
         }
@@ -1719,6 +1823,7 @@ export async function analyzeProject(
     directories: 0,
     filesByType: {} as Record<string, number>,
     agentFiles: [] as string[],
+    warnings: [] as AnalysisWarning[],
   };
 
   // Shallow: Quick structural scan only
@@ -1757,7 +1862,7 @@ export async function analyzeProject(
     if (progressReporter) {
       progressReporter.setPhase('Analyzing code patterns...');
     }
-    codePatterns = await performDeepAnalysis(rootPath, 500, progressReporter, exclusionManager);
+    codePatterns = await performDeepAnalysis(rootPath, scanResult.warnings, 500, progressReporter, exclusionManager);
   }
 
   const truncated = scanResult.files >= maxFiles;
