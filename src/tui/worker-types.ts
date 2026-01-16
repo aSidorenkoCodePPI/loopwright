@@ -138,7 +138,11 @@ export type WorkerEventType =
   | 'worker:error'
   | 'worker:retrying'
   | 'workers:progress'
-  | 'workers:all-complete';
+  | 'workers:all-complete'
+  | 'merge:started'
+  | 'merge:progress'
+  | 'merge:complete'
+  | 'merge:error';
 
 /**
  * Base worker event structure.
@@ -270,6 +274,48 @@ export interface WorkersAllCompleteEvent extends WorkerEventBase {
 }
 
 /**
+ * Merge started event - merge phase has begun.
+ */
+export interface MergeStartedEvent extends WorkerEventBase {
+  type: 'merge:started';
+  /** Number of worker outputs to merge */
+  workerCount: number;
+}
+
+/**
+ * Merge progress event - periodic update during merge.
+ */
+export interface MergeProgressEvent extends WorkerEventBase {
+  type: 'merge:progress';
+  /** Progress message */
+  message: string;
+  /** Elapsed time in milliseconds */
+  elapsedMs: number;
+}
+
+/**
+ * Merge complete event - merge finished successfully.
+ */
+export interface MergeCompleteEvent extends WorkerEventBase {
+  type: 'merge:complete';
+  /** Duration in milliseconds */
+  durationMs: number;
+  /** Path to the merged output file */
+  outputPath: string;
+}
+
+/**
+ * Merge error event - merge failed.
+ */
+export interface MergeErrorEvent extends WorkerEventBase {
+  type: 'merge:error';
+  /** Error message */
+  error: string;
+  /** Path to backup file (if available) */
+  backupPath?: string;
+}
+
+/**
  * Union of all worker events.
  */
 export type WorkerEvent =
@@ -280,7 +326,11 @@ export type WorkerEvent =
   | WorkerErrorEvent
   | WorkerRetryingEvent
   | WorkersProgressEvent
-  | WorkersAllCompleteEvent;
+  | WorkersAllCompleteEvent
+  | MergeStartedEvent
+  | MergeProgressEvent
+  | MergeCompleteEvent
+  | MergeErrorEvent;
 
 /**
  * Worker event listener function type.
