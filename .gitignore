@@ -10,9 +10,11 @@ tasks/
 # Build packaging output
 package/
 
+# Build output (excluded from git - contains machine-specific paths)
+dist/
+
 # Node.js
 node_modules/
-# NOTE: dist/ is NOT ignored - it's included for npm install from GitHub
 *.log
 npm-debug.log*
 pnpm-debug.log*

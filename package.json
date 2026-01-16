@@ -28,7 +28,8 @@
     "lint:fix": "eslint src/ --fix",
     "clean": "node -e \"const fs=require('fs');fs.rmSync('dist',{recursive:true,force:true})\"",
     "dev": "bun run ./src/cli.tsx",
-    "prepublishOnly": "bun run build"
+    "prepublishOnly": "bun run build",
+    "postinstall": "node -e \"const fs=require('fs');if(!fs.existsSync('dist/cli.js')){console.log('Building ralph-tui...');require('child_process').execSync('bun run build',{stdio:'inherit'})}\""
   },
   "author": "subsy",
   "license": "MIT",
