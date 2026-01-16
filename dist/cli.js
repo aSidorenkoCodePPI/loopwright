@@ -36433,7 +36433,7 @@ var require_growl = __commonJS((exports, module2) => {
 
 // node_modules/node-notifier/notifiers/notificationcenter.js
 var require_notificationcenter = __commonJS((exports, module2) => {
-  var __dirname = "C:\\Users\\artur\\OneDrive\\Desktop\\Artur\\UNI\\Projekte\\ralph-tui-main\\node_modules\\node-notifier\\notifiers";
+  var __dirname = "C:\\Users\\ars\\Documents\\KI-Helge\\ralph-tui\\node_modules\\node-notifier\\notifiers";
   var utils = require_utils2();
   var Growl = require_growl();
   var path5 = __require("path");
@@ -36510,15 +36510,9 @@ var require_notificationcenter = __commonJS((exports, module2) => {
 
 // node_modules/node-notifier/notifiers/balloon.js
 var require_balloon = __commonJS((exports, module2) => {
-<<<<<<< HEAD
   var __dirname = "C:\\Users\\ars\\Documents\\KI-Helge\\ralph-tui\\node_modules\\node-notifier\\notifiers";
   var path5 = __require("path");
   var notifier = path5.resolve(__dirname, "../vendor/notifu/notifu");
-=======
-  var __dirname = "C:\\Users\\artur\\OneDrive\\Desktop\\Artur\\UNI\\Projekte\\ralph-tui-main\\node_modules\\node-notifier\\notifiers";
-  var path3 = __require("path");
-  var notifier = path3.resolve(__dirname, "../vendor/notifu/notifu");
->>>>>>> a38e19b9b10ec283578d9d0ba32773dd35f471f4
   var checkGrowl = require_checkGrowl();
   var utils = require_utils2();
   var Toaster = require_toaster();
@@ -37075,15 +37069,9 @@ var require_dist = __commonJS((exports) => {
 
 // node_modules/node-notifier/notifiers/toaster.js
 var require_toaster = __commonJS((exports, module2) => {
-<<<<<<< HEAD
   var __dirname = "C:\\Users\\ars\\Documents\\KI-Helge\\ralph-tui\\node_modules\\node-notifier\\notifiers";
   var path5 = __require("path");
   var notifier = path5.resolve(__dirname, "../vendor/snoreToast/snoretoast");
-=======
-  var __dirname = "C:\\Users\\artur\\OneDrive\\Desktop\\Artur\\UNI\\Projekte\\ralph-tui-main\\node_modules\\node-notifier\\notifiers";
-  var path3 = __require("path");
-  var notifier = path3.resolve(__dirname, "../vendor/snoreToast/snoretoast");
->>>>>>> a38e19b9b10ec283578d9d0ba32773dd35f471f4
   var utils = require_utils2();
   var Balloon = require_balloon();
   var os2 = __require("os");
@@ -37233,7 +37221,7 @@ var require_node_notifier = __commonJS((exports, module2) => {
 var require_package = __commonJS((exports, module2) => {
   module2.exports = {
     name: "@asidorenkocodeppi/ralph-tui",
-    version: "0.1.14",
+    version: "0.1.15",
     publishConfig: {
       access: "public"
     },
@@ -94477,6 +94465,7 @@ Options:
   --verbose, -v       Show detailed analysis output (includes excluded paths)
   --force, -f         Overwrite existing file without confirmation
   --quiet, -q         Suppress progress output
+  --strict            Exit with error on any warning (inaccessible/failed files)
   -h, --help          Show this help message
 
 Path Exclusions:
@@ -94516,6 +94505,12 @@ Progress Indicators:
   The current phase (scanning, analyzing, generating) and file count are displayed.
   Use --quiet to suppress progress output.
 
+Error Handling:
+  Inaccessible files and parsing failures are logged as warnings but don't
+  stop the analysis. The final summary shows skipped/failed file counts.
+  Use --verbose to see detailed warning information.
+  Use --strict to exit with error code 2 if any warnings occur.
+
 Description:
   Analyzes the project directory so AI agents understand the codebase
   structure and conventions. Generates a ralph-context.md file with:
@@ -94535,8 +94530,10 @@ Output:
   If the file exists, prompts for confirmation unless --force is used.
 
 Exit Codes:
-  0    Analysis completed successfully
+  0    Analysis completed successfully (no warnings)
   1    Analysis failed (invalid path, permission error, etc.)
+  2    Analysis completed with warnings (partial success)
+       Only returned if --strict is used
 
 Examples:
   ralph-tui learn                             # Analyze current directory
@@ -94551,6 +94548,7 @@ Examples:
   ralph-tui learn -v                          # Verbose output (shows exclusions)
   ralph-tui learn --force                     # Overwrite without confirmation
   ralph-tui learn --quiet                     # Suppress progress output
+  ralph-tui learn --strict                    # Fail on any warning
 `);
 }
 function parseLearnArgs(args) {
@@ -94562,7 +94560,8 @@ function parseLearnArgs(args) {
     output: null,
     depth: "standard",
     quiet: false,
-    include: []
+    include: [],
+    strict: false
   };
   for (let i = 0;i < args.length; i++) {
     const arg = args[i];
@@ -94577,6 +94576,8 @@ function parseLearnArgs(args) {
       result.force = true;
     } else if (arg === "--quiet" || arg === "-q") {
       result.quiet = true;
+    } else if (arg === "--strict") {
+      result.strict = true;
     } else if (arg === "--output" || arg === "-o") {
       const nextArg = args[++i];
       if (!nextArg || nextArg.startsWith("-")) {
@@ -94840,57 +94841,96 @@ function parseDependencies(rootPath, files) {
 function detectArchitecturalPatterns(rootPath, files, topLevelDirs) {
   const patterns = [];
   const mvcDirs = ["models", "views", "controllers", "model", "view", "controller"];
-  if (mvcDirs.some((d) => topLevelDirs.includes(d))) {
-    patterns.push("MVC (Model-View-Controller)");
+  const mvcMatches = mvcDirs.filter((d) => topLevelDirs.includes(d)).length;
+  if (mvcMatches >= 3) {
+    patterns.push({ name: "MVC (Model-View-Controller)", confidence: "high" });
+  } else if (mvcMatches >= 2) {
+    patterns.push({ name: "MVC (Model-View-Controller)", confidence: "medium" });
+  } else if (mvcMatches >= 1) {
+    patterns.push({ name: "MVC (Model-View-Controller)", confidence: "low" });
   }
   const cleanArchDirs = ["domain", "application", "infrastructure", "adapters", "ports"];
-  if (cleanArchDirs.filter((d) => topLevelDirs.includes(d)).length >= 2) {
-    patterns.push("Clean Architecture / Hexagonal");
+  const cleanArchMatches = cleanArchDirs.filter((d) => topLevelDirs.includes(d)).length;
+  if (cleanArchMatches >= 4) {
+    patterns.push({ name: "Clean Architecture / Hexagonal", confidence: "high" });
+  } else if (cleanArchMatches >= 3) {
+    patterns.push({ name: "Clean Architecture / Hexagonal", confidence: "medium" });
+  } else if (cleanArchMatches >= 2) {
+    patterns.push({ name: "Clean Architecture / Hexagonal", confidence: "low" });
   }
-  if (topLevelDirs.includes("components") || topLevelDirs.includes("ui")) {
-    patterns.push("Component-based architecture");
+  const hasComponents = topLevelDirs.includes("components");
+  const hasUi = topLevelDirs.includes("ui");
+  if (hasComponents && hasUi) {
+    patterns.push({ name: "Component-based architecture", confidence: "high" });
+  } else if (hasComponents || hasUi) {
+    patterns.push({ name: "Component-based architecture", confidence: "medium" });
   }
-  if (topLevelDirs.includes("packages") || topLevelDirs.includes("apps") || topLevelDirs.includes("libs")) {
-    patterns.push("Monorepo structure");
-  }
-  if (topLevelDirs.includes("features") || topLevelDirs.includes("modules")) {
-    patterns.push("Feature-based / Modular architecture");
-  }
-  if (topLevelDirs.includes("api") || topLevelDirs.includes("routes") || topLevelDirs.includes("endpoints")) {
-    patterns.push("API-centric design");
-  }
-  const layeredDirs = ["services", "repositories", "entities"];
-  if (layeredDirs.filter((d) => topLevelDirs.includes(d)).length >= 2) {
-    patterns.push("Layered architecture");
-  }
-  if (topLevelDirs.includes("plugins") || topLevelDirs.includes("extensions") || topLevelDirs.includes("addons")) {
-    patterns.push("Plugin/Extension architecture");
+  const monorepoIndicators = ["packages", "apps", "libs", "workspaces"].filter((d) => topLevelDirs.includes(d));
+  const hasMonorepoConfig = files.includes("nx.json") || files.includes("lerna.json") || files.includes("turbo.json") || files.includes("pnpm-workspace.yaml");
+  if (monorepoIndicators.length >= 2 || monorepoIndicators.length >= 1 && hasMonorepoConfig) {
+    patterns.push({ name: "Monorepo structure", confidence: "high" });
+  } else if (monorepoIndicators.length >= 1) {
+    patterns.push({ name: "Monorepo structure", confidence: "medium" });
   }
   if (files.includes("nx.json")) {
-    patterns.push("Nx workspace (Monorepo)");
+    patterns.push({ name: "Nx workspace", confidence: "high" });
   }
   if (files.includes("lerna.json")) {
-    patterns.push("Lerna monorepo");
+    patterns.push({ name: "Lerna monorepo", confidence: "high" });
   }
   if (files.includes("turbo.json")) {
-    patterns.push("Turborepo");
+    patterns.push({ name: "Turborepo", confidence: "high" });
   }
   if (files.includes("pnpm-workspace.yaml")) {
-    patterns.push("PNPM workspace");
+    patterns.push({ name: "PNPM workspace", confidence: "high" });
+  }
+  const hasFeatures = topLevelDirs.includes("features");
+  const hasModules = topLevelDirs.includes("modules");
+  if (hasFeatures && hasModules) {
+    patterns.push({ name: "Feature-based / Modular architecture", confidence: "high" });
+  } else if (hasFeatures || hasModules) {
+    patterns.push({ name: "Feature-based / Modular architecture", confidence: "medium" });
+  }
+  const apiDirs = ["api", "routes", "endpoints", "controllers", "handlers"].filter((d) => topLevelDirs.includes(d));
+  if (apiDirs.length >= 3) {
+    patterns.push({ name: "API-centric design", confidence: "high" });
+  } else if (apiDirs.length >= 2) {
+    patterns.push({ name: "API-centric design", confidence: "medium" });
+  } else if (apiDirs.length >= 1) {
+    patterns.push({ name: "API-centric design", confidence: "low" });
+  }
+  const layeredDirs = ["services", "repositories", "entities", "dao", "dto"];
+  const layeredMatches = layeredDirs.filter((d) => topLevelDirs.includes(d)).length;
+  if (layeredMatches >= 3) {
+    patterns.push({ name: "Layered architecture", confidence: "high" });
+  } else if (layeredMatches >= 2) {
+    patterns.push({ name: "Layered architecture", confidence: "medium" });
+  }
+  const pluginDirs = ["plugins", "extensions", "addons", "middleware"].filter((d) => topLevelDirs.includes(d));
+  if (pluginDirs.length >= 2) {
+    patterns.push({ name: "Plugin/Extension architecture", confidence: "high" });
+  } else if (pluginDirs.length >= 1) {
+    patterns.push({ name: "Plugin/Extension architecture", confidence: "medium" });
   }
   if (files.includes("serverless.yml") || files.includes("serverless.yaml") || files.includes("serverless.ts")) {
-    patterns.push("Serverless architecture");
+    patterns.push({ name: "Serverless architecture", confidence: "high" });
   }
   if (files.includes("docker-compose.yml") || files.includes("docker-compose.yaml")) {
     const composePath = path7.join(rootPath, files.find((f) => f.startsWith("docker-compose")) || "");
     try {
       const content = fs5.readFileSync(composePath, "utf-8");
-      if ((content.match(/services:/g) || []).length > 0 && content.split("image:").length > 2) {
-        patterns.push("Microservices architecture");
+      const serviceCount = (content.match(/^\s{2}\w+:/gm) || []).length;
+      if (serviceCount >= 5) {
+        patterns.push({ name: "Microservices architecture", confidence: "high" });
+      } else if (serviceCount >= 3) {
+        patterns.push({ name: "Microservices architecture", confidence: "medium" });
+      } else if (serviceCount >= 2) {
+        patterns.push({ name: "Microservices architecture", confidence: "low" });
       }
     } catch {}
   }
-  return patterns;
+  const confidenceOrder = { high: 0, medium: 1, low: 2 };
+  return patterns.sort((a, b) => confidenceOrder[a.confidence] - confidenceOrder[b.confidence]).map((p) => `${p.name} [${p.confidence} confidence]`);
 }
 function buildDirectoryTree(rootPath, maxDepth = 3) {
   const lines = [];
@@ -94953,7 +94993,13 @@ function generateContextMarkdown(result) {
   lines.push(`- **Total Files**: ${result.totalFiles.toLocaleString()}${result.truncated ? " (truncated at 10,000)" : ""}`);
   lines.push(`- **Total Directories**: ${result.totalDirectories.toLocaleString()}`);
   lines.push("");
-  lines.push("## Languages and Frameworks");
+  lines.push("## Technology Stack");
+  lines.push("");
+  lines.push("### Project Type");
+  lines.push("");
+  lines.push(`This is a **${result.projectTypes.join(", ")}** project.`);
+  lines.push("");
+  lines.push("### Primary Languages");
   lines.push("");
   if (Object.keys(result.filesByType).length > 0) {
     const sortedTypes = Object.entries(result.filesByType).sort((a, b) => b[1] - a[1]);
@@ -94965,6 +95011,51 @@ function generateContextMarkdown(result) {
     lines.push("");
   } else {
     lines.push("*No specific language files detected.*");
+    lines.push("");
+  }
+  const detectedFrameworks = [];
+  if (result.projectTypes.includes("node"))
+    detectedFrameworks.push("Node.js");
+  if (result.projectTypes.includes("python"))
+    detectedFrameworks.push("Python");
+  if (result.projectTypes.includes("rust"))
+    detectedFrameworks.push("Rust");
+  if (result.projectTypes.includes("go"))
+    detectedFrameworks.push("Go");
+  if (result.projectTypes.includes("java"))
+    detectedFrameworks.push("Java");
+  if (result.projectTypes.includes("dotnet"))
+    detectedFrameworks.push(".NET");
+  if (result.projectTypes.includes("ruby"))
+    detectedFrameworks.push("Ruby");
+  if (result.projectTypes.includes("php"))
+    detectedFrameworks.push("PHP");
+  for (const conv of result.conventions) {
+    if (conv.includes("TypeScript"))
+      detectedFrameworks.push("TypeScript");
+    if (conv.includes("Jest"))
+      detectedFrameworks.push("Jest");
+    if (conv.includes("Vitest"))
+      detectedFrameworks.push("Vitest");
+    if (conv.includes("Pytest"))
+      detectedFrameworks.push("Pytest");
+    if (conv.includes("ESLint"))
+      detectedFrameworks.push("ESLint");
+    if (conv.includes("Prettier"))
+      detectedFrameworks.push("Prettier");
+    if (conv.includes("Docker"))
+      detectedFrameworks.push("Docker");
+    if (conv.includes("GitHub Actions"))
+      detectedFrameworks.push("GitHub Actions");
+    if (conv.includes("GitLab CI"))
+      detectedFrameworks.push("GitLab CI");
+  }
+  if (detectedFrameworks.length > 0) {
+    lines.push("### Detected Frameworks and Tools");
+    lines.push("");
+    for (const fw of detectedFrameworks) {
+      lines.push(`- ${fw}`);
+    }
     lines.push("");
   }
   lines.push("## Directory Structure");
@@ -95097,7 +95188,13 @@ async function scanDirectory(dirPath, maxFiles, result, relativePath = "", progr
   let entries;
   try {
     entries = fs5.readdirSync(dirPath, { withFileTypes: true });
-  } catch {
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    result.warnings.push({
+      type: "inaccessible",
+      filePath: relativePath || dirPath,
+      reason: `Cannot access directory: ${reason}`
+    });
     return false;
   }
   for (const entry of entries) {
@@ -95197,7 +95294,7 @@ function detectCodePatternsInFile(_filePath, content) {
   }
   return detected;
 }
-async function performDeepAnalysis(rootPath, maxFilesToAnalyze = 500, progressReporter, exclusionManager) {
+async function performDeepAnalysis(rootPath, warnings, maxFilesToAnalyze = 500, progressReporter, exclusionManager) {
   const patternMap = new Map;
   let filesAnalyzed = 0;
   async function analyzeDir(dirPath, relativePath = "") {
@@ -95206,7 +95303,13 @@ async function performDeepAnalysis(rootPath, maxFilesToAnalyze = 500, progressRe
     let entries;
     try {
       entries = fs5.readdirSync(dirPath, { withFileTypes: true });
-    } catch {
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      warnings.push({
+        type: "inaccessible",
+        filePath: relativePath || dirPath,
+        reason: `Cannot access directory: ${reason}`
+      });
       return;
     }
     for (const entry of entries) {
@@ -95233,8 +95336,8 @@ async function performDeepAnalysis(rootPath, maxFilesToAnalyze = 500, progressRe
         if (!shouldExclude) {
           const ext = path7.extname(entry.name);
           if ([".ts", ".tsx", ".js", ".jsx", ".py", ".rb", ".java", ".go"].includes(ext)) {
+            const filePath = path7.join(dirPath, entry.name);
             try {
-              const filePath = path7.join(dirPath, entry.name);
               const content = fs5.readFileSync(filePath, "utf-8");
               const patterns = detectCodePatternsInFile(filePath, content);
               for (const { pattern, description } of patterns) {
@@ -95250,7 +95353,14 @@ async function performDeepAnalysis(rootPath, maxFilesToAnalyze = 500, progressRe
               if (progressReporter && filesAnalyzed % 50 === 0) {
                 progressReporter.updateCounts(filesAnalyzed, 0);
               }
-            } catch {}
+            } catch (err) {
+              const reason = err instanceof Error ? err.message : String(err);
+              warnings.push({
+                type: "read_error",
+                filePath: entryRelativePath,
+                reason: `Cannot read file: ${reason}`
+              });
+            }
           }
         }
       }
@@ -95303,7 +95413,8 @@ async function analyzeProject(rootPath, depth = "standard", progressReporter, in
     files: 0,
     directories: 0,
     filesByType: {},
-    agentFiles: []
+    agentFiles: [],
+    warnings: []
   };
   if (depth === "shallow") {
     for (const file2 of topLevelFiles) {
@@ -95334,10 +95445,12 @@ async function analyzeProject(rootPath, depth = "standard", progressReporter, in
     if (progressReporter) {
       progressReporter.setPhase("Analyzing code patterns...");
     }
-    codePatterns = await performDeepAnalysis(rootPath, 500, progressReporter, exclusionManager);
+    codePatterns = await performDeepAnalysis(rootPath, scanResult.warnings, 500, progressReporter, exclusionManager);
   }
   const truncated = scanResult.files >= maxFiles;
   const durationMs = Date.now() - startTime;
+  const skippedFiles = scanResult.warnings.filter((w) => w.type === "inaccessible").length;
+  const failedFiles = scanResult.warnings.filter((w) => w.type === "read_error" || w.type === "parse_error").length;
   return {
     rootPath,
     totalFiles: scanResult.files,
@@ -95355,7 +95468,10 @@ async function analyzeProject(rootPath, depth = "standard", progressReporter, in
     depthLevel: depth,
     codePatterns,
     exclusionConfig: exclusionManager.getConfig(),
-    exclusionStats: exclusionManager.getStats()
+    exclusionStats: exclusionManager.getStats(),
+    warnings: scanResult.warnings.length > 0 ? scanResult.warnings : undefined,
+    skippedFiles: skippedFiles > 0 ? skippedFiles : undefined,
+    failedFiles: failedFiles > 0 ? failedFiles : undefined
   };
 }
 function printHumanResult(result, verbose) {
@@ -95456,6 +95572,27 @@ function printHumanResult(result, verbose) {
       console.log("");
     }
   }
+  if (result.warnings && result.warnings.length > 0) {
+    console.log("  \u26A0\uFE0F  Warnings:");
+    if (result.skippedFiles && result.skippedFiles > 0) {
+      console.log(`    Inaccessible directories: ${result.skippedFiles}`);
+    }
+    if (result.failedFiles && result.failedFiles > 0) {
+      console.log(`    Failed to read/parse:     ${result.failedFiles}`);
+    }
+    if (verbose) {
+      console.log("");
+      console.log("  Warning Details:");
+      for (const warning of result.warnings.slice(0, 20)) {
+        console.log(`    \u2022 [${warning.type}] ${warning.filePath}`);
+        console.log(`      ${warning.reason}`);
+      }
+      if (result.warnings.length > 20) {
+        console.log(`    ... and ${result.warnings.length - 20} more warnings`);
+      }
+    }
+    console.log("");
+  }
   console.log("\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500");
   console.log("  Analysis complete. AI agents can now better understand");
   console.log("  this codebase structure and conventions.");
@@ -95524,6 +95661,12 @@ async function executeLearnCommand(args) {
       console.log("");
     } else {
       console.log(JSON.stringify(result, null, 2));
+    }
+    if (parsedArgs.strict && result.warnings && result.warnings.length > 0) {
+      if (!parsedArgs.json) {
+        console.log("\u26A0\uFE0F  Exiting with error code 2 due to --strict flag and warnings.");
+      }
+      process.exit(2);
     }
     process.exit(0);
   } catch (error48) {
@@ -95733,8 +95876,4 @@ main2().catch((error48) => {
   process.exit(1);
 });
 
-<<<<<<< HEAD
-//# debugId=3396A178308E412B64756E2164756E21
-=======
-//# debugId=595C91990691B0AB64756E2164756E21
->>>>>>> a38e19b9b10ec283578d9d0ba32773dd35f471f4
+//# debugId=32389F4E5B78EC9D64756E2164756E21
