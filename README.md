@@ -6,24 +6,83 @@
 
 Ralph TUI connects your AI coding assistant (GitHub Copilot CLI, Claude Code, OpenCode) to your task tracker and runs them in an autonomous loop, completing tasks one-by-one with intelligent selection, error handling, and full visibility.
 
+## Installation
+
+### Prerequisites
+
+- [Bun](https://bun.sh) - JavaScript runtime (REQUIRED)
+- [GitHub Copilot CLI](https://githubnext.com/projects/copilot-cli) - Default AI agent
+
+### Step 1: Install Bun
+
+```powershell
+# Windows - Option 1: via npm
+npm install -g bun
+
+# Windows - Option 2: via PowerShell
+powershell -c "irm bun.sh/install.ps1 | iex"
+
+# macOS/Linux
+curl -fsSL https://bun.sh/install | bash
+```
+
+After installation, verify Bun is available:
+```powershell
+bun --version
+```
+
+### Step 2: Install Ralph TUI
+
+```powershell
+# Install the package
+npm install -g @asidorenkocodeppi/ralph-tui
+
+# IMPORTANT: Also install with bun to create the CLI symlink
+bun install -g @asidorenkocodeppi/ralph-tui
+```
+
+> **Note:** The `bun install -g` step is required to create the `ralph-tui` command in your PATH.
+
+### Step 3: Install GitHub Copilot CLI (Default Agent)
+
+```powershell
+# Windows
+npm install -g @github/copilot
+
+# Authenticate
+gh auth login
+```
+
+### Verify Installation
+
+```powershell
+ralph-tui --help
+```
+
+If you get "command not found", try:
+```powershell
+# Option 1: Run directly with bunx
+bunx @asidorenkocodeppi/ralph-tui --help
+
+# Option 2: Add bun's bin to PATH (add to your shell profile)
+export PATH="$HOME/.bun/bin:$PATH"
+```
+
 ## Quick Start
 
 ```powershell
-# Install from npm (recommended)
-npm install -g @asidorenkocodeppi/ralph-tui
-
-# Or install from GitHub release
-npm install -g https://github.com/aSidorenkoCodePPI/ralph-tui/releases/download/v0.1.9/ralph-tui-0.1.9.tgz
-
 # Setup your project
 cd your-project
 ralph-tui setup
 
 # Create a PRD with AI assistance
-ralph-tui create-prd --chat
+ralph-tui create-prd
+
+# Or create a PRD from a Jira issue
+ralph-tui create-prd --jira
 
 # Run Ralph!
-ralph-tui run --prd ./prd.json
+ralph-tui run --prd ./tasks/prd.json
 ```
 
 That's it! Ralph will work through your tasks autonomously.
@@ -61,6 +120,7 @@ Ralph selects the highest-priority task, builds a prompt, executes your AI agent
 
 - **AI Agents**: GitHub Copilot CLI (default), Claude Code, OpenCode
 - **Task Trackers**: prd.json (simple), Beads (git-backed with dependencies)
+- **Jira Integration**: Create PRDs from Jira issues with `--jira` flag
 - **Session Persistence**: Pause anytime, resume later, survive crashes
 - **Real-time TUI**: Watch agent output, control execution with keyboard shortcuts
 - **Cross-iteration Context**: Automatic progress tracking between tasks
@@ -77,6 +137,8 @@ Ralph selects the highest-priority task, builds a prompt, executes your AI agent
 | `ralph-tui logs` | View iteration output logs |
 | `ralph-tui setup` | Run interactive project setup |
 | `ralph-tui create-prd` | Create a new PRD interactively |
+| `ralph-tui create-prd --jira` | Create a PRD from a Jira issue |
+| `ralph-tui jira-prd` | List Jira issues assigned to you |
 | `ralph-tui config show` | Display merged configuration |
 | `ralph-tui plugins agents` | List available agent plugins |
 
@@ -109,39 +171,6 @@ ralph-tui run --iterations 5
 | `i` | Toggle iteration history |
 | `q` | Quit |
 | `?` | Show help |
-
-## Prerequisites
-
-- [Bun](https://bun.sh) - JavaScript runtime (REQUIRED)
-- [GitHub Copilot CLI](https://githubnext.com/projects/copilot-cli) - Default AI agent
-
-### Installing Bun (Required)
-
-```powershell
-# Windows - Option 1: via npm
-npm install -g bun
-
-# Windows - Option 2: via PowerShell
-powershell -c "irm bun.sh/install.ps1 | iex"
-
-# macOS/Linux
-curl -fsSL https://bun.sh/install | bash
-```
-
-After installation, verify Bun is available:
-```powershell
-bun --version
-```
-
-### Installing GitHub Copilot CLI
-
-```powershell
-# Windows
-npm install -g @github/copilot
-
-# Authenticate
-gh auth login
-```
 
 ## Development
 
