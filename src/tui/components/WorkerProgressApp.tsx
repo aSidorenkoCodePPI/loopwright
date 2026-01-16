@@ -3,6 +3,7 @@
  * Main application component for displaying worker execution progress.
  * Integrates WorkerProgressDashboard with keyboard handling and state management.
  * Used by the learn command when executing workers with TUI enabled.
+ * US-008: Shows completion summary when analysis finishes and waits for key to exit.
  */
 
 import { useKeyboard, useTerminalDimensions } from '@opentui/react';
@@ -13,11 +14,13 @@ import { Header } from './Header.js';
 import { Footer } from './Footer.js';
 import { ConfirmationDialog } from './ConfirmationDialog.js';
 import { WorkerProgressDashboard } from './WorkerProgressDashboard.js';
+import { CompletionSummaryScreen } from './CompletionSummaryScreen.js';
 import type {
   WorkerState,
   WorkerProgressState,
   WorkerEvent,
   WorkerEventListener,
+  CompletionSummary,
 } from '../worker-types.js';
 
 /**
@@ -38,6 +41,10 @@ export interface WorkerProgressAppProps {
   agentName?: string;
   /** Model being used */
   currentModel?: string;
+  /** Completion summary data (set when analysis completes) */
+  completionSummary?: CompletionSummary;
+  /** Callback when user presses key to exit after completion */
+  onCompletionDismiss?: () => void;
 }
 
 /**
@@ -52,6 +59,7 @@ function calculateProgressPercent(workers: WorkerState[]): number {
 /**
  * Worker Progress App component.
  * Displays comprehensive worker execution progress with real-time updates.
+ * US-008: Shows completion summary screen when all workers finish.
  */
 export function WorkerProgressApp({
   initialWorkers,
@@ -61,6 +69,8 @@ export function WorkerProgressApp({
   onRetryFailed,
   agentName = 'copilot',
   currentModel,
+  completionSummary,
+  onCompletionDismiss,
 }: WorkerProgressAppProps): ReactNode {
   const { height } = useTerminalDimensions();
   
@@ -75,6 +85,9 @@ export function WorkerProgressApp({
   // Navigation state (US-005)
   const [selectedWorkerIndex, setSelectedWorkerIndex] = useState(0);
   const [focusMode, setFocusMode] = useState(false);
+  
+  // Completion state (US-008)
+  const [showCompletionScreen, setShowCompletionScreen] = useState(false);
   
   // Dialog state
   const [showQuitDialog, setShowQuitDialog] = useState(false);
@@ -130,13 +143,17 @@ export function WorkerProgressApp({
     };
   }, []);
 
-  // Stop timer when all complete
+  // Stop timer when all complete and show completion screen
   useEffect(() => {
     if (isComplete && timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
-  }, [isComplete]);
+    // US-008: Show completion screen when completionSummary is provided and all complete
+    if (isComplete && completionSummary) {
+      setShowCompletionScreen(true);
+    }
+  }, [isComplete, completionSummary]);
 
   // Subscribe to worker events
   useEffect(() => {
@@ -230,6 +247,22 @@ export function WorkerProgressApp({
   // Handle keyboard input
   const handleKeyboard = useCallback(
     (key: { name: string; sequence?: string }) => {
+      // US-008: Handle any key to exit completion screen
+      if (showCompletionScreen) {
+        // 'v' toggles verbose mode without exiting
+        if (key.name === 'v') {
+          setVerboseMode(prev => !prev);
+          return;
+        }
+        // Any other key dismisses completion screen
+        if (onCompletionDismiss) {
+          onCompletionDismiss();
+        } else {
+          onQuit?.();
+        }
+        return;
+      }
+
       // Handle quit dialog
       if (showQuitDialog) {
         switch (key.name) {
@@ -306,13 +339,68 @@ export function WorkerProgressApp({
           break;
       }
     },
-    [showQuitDialog, onQuit, onInterrupt, onRetryFailed, focusMode, runningCount, workers]
+    [showCompletionScreen, showQuitDialog, onQuit, onInterrupt, onRetryFailed, onCompletionDismiss, focusMode, runningCount, workers]
   );
 
   useKeyboard(handleKeyboard);
 
   // Calculate layout
   const contentHeight = Math.max(1, height - layout.header.height - layout.footer.height);
+
+  // US-008: Show completion summary screen when analysis finishes
+  if (showCompletionScreen && completionSummary) {
+    return (
+      <box
+        style={{
+          width: '100%',
+          height: '100%',
+          flexDirection: 'column',
+          backgroundColor: colors.bg.primary,
+        }}
+      >
+        {/* Header */}
+        <Header
+          status={hasErrors ? 'error' : 'complete'}
+          elapsedTime={Math.floor(elapsedMs / 1000)}
+          completedTasks={completedCount}
+          totalTasks={totalCount}
+          agentName={agentName}
+          currentModel={currentModel}
+          currentIteration={0}
+          maxIterations={totalCount}
+        />
+
+        {/* Completion Summary Screen */}
+        <box
+          style={{
+            flexGrow: 1,
+            height: contentHeight,
+            padding: 1,
+          }}
+        >
+          <CompletionSummaryScreen
+            summary={completionSummary}
+            verboseMode={verboseMode}
+            maxHeight={contentHeight - 2}
+          />
+        </box>
+
+        {/* Footer - simplified for completion screen */}
+        <box
+          style={{
+            height: 1,
+            paddingLeft: 1,
+            backgroundColor: colors.bg.secondary,
+          }}
+        >
+          <text fg={colors.fg.muted}>
+            Press <span fg={colors.accent.primary}>v</span> for verbose |{' '}
+            <span fg={colors.accent.primary}>any key</span> to exit
+          </text>
+        </box>
+      </box>
+    );
+  }
 
   return (
     <box

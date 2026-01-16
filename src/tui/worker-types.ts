@@ -338,6 +338,79 @@ export type WorkerEvent =
 export type WorkerEventListener = (event: WorkerEvent) => void;
 
 /**
+ * Warning summary for a worker or folder that encountered issues.
+ */
+export interface WorkerWarning {
+  /** Worker or folder ID */
+  workerId: string;
+  /** Worker or folder name */
+  workerName: string;
+  /** Type of warning */
+  type: 'failure' | 'retry' | 'partial';
+  /** Number of retries attempted (if applicable) */
+  retryCount?: number;
+  /** Error message (if applicable) */
+  error?: string;
+}
+
+/**
+ * Completion summary data for display in the TUI after analysis completes.
+ * US-008: View Analysis Summary on Completion
+ */
+export interface CompletionSummary {
+  /** Total elapsed time in milliseconds */
+  totalElapsedMs: number;
+  /** Number of folders analyzed */
+  foldersAnalyzed: number;
+  /** Number of files processed */
+  filesProcessed: number;
+  /** Number of workers that succeeded */
+  workersSucceeded: number;
+  /** Number of workers that failed */
+  workersFailed: number;
+  /** Total number of workers */
+  totalWorkers: number;
+  /** Path to the output file */
+  outputFilePath?: string;
+  /** Size of output file in bytes */
+  outputFileSizeBytes?: number;
+  /** Whether the analysis was successful overall */
+  success: boolean;
+  /** List of warnings (failed folders, retries, etc.) */
+  warnings: WorkerWarning[];
+  /** Peak memory usage in MB */
+  peakMemoryMB?: number;
+  /** Peak CPU usage percentage */
+  peakCpuPercent?: number;
+  /** Speedup factor (sequential / parallel) */
+  speedupFactor?: number;
+  /** Per-worker statistics for verbose mode */
+  workerStats?: WorkerStatistics[];
+}
+
+/**
+ * Per-worker statistics for verbose mode display.
+ */
+export interface WorkerStatistics {
+  /** Worker ID/name */
+  id: string;
+  /** Worker display name */
+  name: string;
+  /** Number of folders this worker analyzed */
+  folderCount: number;
+  /** Number of files this worker processed */
+  fileCount: number;
+  /** Duration in milliseconds */
+  durationMs: number;
+  /** Whether this worker succeeded */
+  success: boolean;
+  /** Number of retries (0 if no retries) */
+  retryCount: number;
+  /** Error message if failed */
+  error?: string;
+}
+
+/**
  * Create initial worker state from folder groupings.
  */
 export function createWorkerState(

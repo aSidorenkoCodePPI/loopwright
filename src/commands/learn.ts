@@ -14,7 +14,10 @@ import { spawn } from 'node:child_process';
 import type { 
   WorkerState, 
   WorkerEvent, 
-  WorkerEventListener 
+  WorkerEventListener,
+  CompletionSummary,
+  WorkerWarning,
+  WorkerStatistics,
 } from '../tui/worker-types.js';
 
 /**
@@ -3484,12 +3487,16 @@ function printMergeResults(result: MergeResult, _verbose: boolean): void {
  * @param plan - Master agent plan containing folder groupings
  * @param rootPath - Root path of the project
  * @param maxRetries - Maximum retry attempts for failed workers (default: 3)
+ * @param outputFilePath - Path to output file (optional, for completion summary display)
+ * @param verbose - Whether verbose mode is enabled (default: false)
  * @returns Worker execution summary
  */
 export async function executeWorkersWithTui(
   plan: MasterAgentPlan,
   rootPath: string,
   maxRetries: number = 3,
+  outputFilePath?: string,
+  verbose: boolean = false,
 ): Promise<WorkerExecutionSummary> {
   // Dynamic import to avoid loading TUI modules when not needed
   const { createCliRenderer } = await import('@opentui/core');
@@ -3781,8 +3788,84 @@ export async function executeWorkersWithTui(
       speedupFactor,
     });
 
-    // Wait a bit for TUI to show completion, then cleanup
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // US-008: Build completion summary for TUI display
+    const warnings: WorkerWarning[] = [];
+    const workerStats: WorkerStatistics[] = [];
+    
+    // Count total folders and collect per-worker stats
+    let totalFolders = 0;
+    for (const result of workerResults) {
+      totalFolders += result.folders.length;
+      
+      // Add warnings for failed workers
+      if (!result.success) {
+        warnings.push({
+          workerId: result.groupName,
+          workerName: result.groupName,
+          type: 'failure',
+          error: result.error,
+        });
+      }
+      
+      // Per-worker stats for verbose mode
+      workerStats.push({
+        id: result.groupName,
+        name: result.groupName,
+        folderCount: result.folders.length,
+        fileCount: 0, // Could calculate if needed
+        durationMs: result.durationMs,
+        success: result.success,
+        retryCount: 0, // TODO: track retries per worker
+        error: result.error,
+      });
+    }
+
+    // Get output file size if available
+    let outputFileSizeBytes: number | undefined;
+    if (outputFilePath) {
+      try {
+        const stats = fs.statSync(outputFilePath);
+        outputFileSizeBytes = stats.size;
+      } catch {
+        // File may not exist yet
+      }
+    }
+
+    const completionSummary: CompletionSummary = {
+      totalElapsedMs: totalDurationMs,
+      foldersAnalyzed: totalFolders,
+      filesProcessed: 0, // Could be calculated from worker outputs
+      workersSucceeded: successCount,
+      workersFailed: failedCount,
+      totalWorkers: plan.groupings.length,
+      outputFilePath,
+      outputFileSizeBytes,
+      success: failedCount === 0,
+      warnings,
+      peakMemoryMB,
+      peakCpuPercent,
+      speedupFactor,
+      workerStats: verbose ? workerStats : undefined,
+    };
+
+    // US-008: TUI remains visible until user presses key to exit
+    // Create a promise that resolves when user dismisses the completion screen
+    const completionDismissed = new Promise<void>((resolve) => {
+      // Re-render TUI with completion summary
+      root.render(
+        React.createElement(WorkerProgressApp, {
+          initialWorkers,
+          onSubscribe: subscribe,
+          onQuit: handleQuit,
+          onInterrupt: handleQuit,
+          completionSummary,
+          onCompletionDismiss: () => resolve(),
+        })
+      );
+    });
+
+    // Wait for user to press key to dismiss completion screen
+    await completionDismissed;
     renderer.destroy();
 
     return {

@@ -42,3 +42,5 @@ export { WorkerProgressDashboard } from './WorkerProgressDashboard.js';
 export type { WorkerProgressDashboardProps } from './WorkerProgressDashboard.js';
 export { WorkerProgressApp } from './WorkerProgressApp.js';
 export type { WorkerProgressAppProps } from './WorkerProgressApp.js';
+export { CompletionSummaryScreen } from './CompletionSummaryScreen.js';
+export type { CompletionSummaryScreenProps } from './CompletionSummaryScreen.js';
