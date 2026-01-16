@@ -84,6 +84,7 @@ Convert Options:
 Learn Options:
   --output, -o <path> Custom output file path (default: ./ralph-context.md)
   --depth <level>     Analysis depth: shallow, standard (default), or deep
+  --agent             Use master agent (copilot -p) for intelligent folder groupings
   --json              Output analysis in JSON format
   --verbose, -v       Show detailed analysis output
   --force, -f         Overwrite existing file without confirmation
@@ -94,6 +95,7 @@ Examples:
   ralph-tui create-prd --chat            # Create PRD with AI chat mode
   ralph-tui convert --to json ./prd.md   # Convert PRD to JSON
   ralph-tui learn                        # Analyze current directory
+  ralph-tui learn --agent                # Use master agent for folder groupings
   ralph-tui learn ./my-project           # Analyze specific directory
   ralph-tui learn --depth shallow        # Quick structural scan
   ralph-tui learn --depth deep           # Full code pattern analysis

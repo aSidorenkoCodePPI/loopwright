@@ -91,6 +91,7 @@ export {
   parseLearnArgs,
   printLearnHelp,
   analyzeProject,
+  invokeMasterAgentAnalysis,
 } from './learn.js';
 
-export type { LearnResult, LearnArgs, DependencyInfo } from './learn.js';
+export type { LearnResult, LearnArgs, DependencyInfo, FolderGrouping, MasterAgentPlan, MasterAgentResult } from './learn.js';

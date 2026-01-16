@@ -7,6 +7,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { spawn } from 'node:child_process';
 
 /**
  * Binary file extensions to automatically exclude
@@ -381,6 +382,44 @@ export interface CodePattern {
 }
 
 /**
+ * Folder grouping from master agent analysis
+ */
+export interface FolderGrouping {
+  /** Group name (e.g., 'Core Components', 'API Layer') */
+  name: string;
+  /** Folders in this group */
+  folders: string[];
+  /** Priority level (1-5, where 1 is highest priority) */
+  priority: number;
+}
+
+/**
+ * Master agent analysis plan
+ */
+export interface MasterAgentPlan {
+  /** Folder groupings determined by master agent */
+  groupings: FolderGrouping[];
+  /** Analysis summary from the agent */
+  summary?: string;
+  /** Suggested analysis order */
+  analysisOrder?: string[];
+}
+
+/**
+ * Master agent analysis result
+ */
+export interface MasterAgentResult {
+  /** Whether the analysis succeeded */
+  success: boolean;
+  /** The analysis plan if successful */
+  plan?: MasterAgentPlan;
+  /** Error message if failed */
+  error?: string;
+  /** Duration of the analysis in milliseconds */
+  durationMs: number;
+}
+
+/**
  * Analysis result structure
  */
 export interface LearnResult {
@@ -443,6 +482,9 @@ export interface LearnResult {
 
   /** Count of files that failed to parse */
   failedFiles?: number;
+
+  /** Master agent analysis plan (when --agent is used) */
+  masterAgentPlan?: MasterAgentPlan;
 }
 
 /**
@@ -487,6 +529,9 @@ export interface LearnArgs {
 
   /** Exit with error on any warning */
   strict: boolean;
+
+  /** Use master agent (copilot -p) for intelligent analysis */
+  agent: boolean;
 }
 
 /**
@@ -654,6 +699,7 @@ Arguments:
 Options:
   --output, -o <path> Custom output file path (default: ./ralph-context.md)
   --depth <level>     Analysis depth: shallow, standard (default), or deep
+  --agent             Use master agent (copilot -p) for intelligent folder groupings
   --include <pattern> Include paths matching pattern (overrides exclusions)
                       Can be specified multiple times
   --json              Output in JSON format (machine-readable)
@@ -662,6 +708,18 @@ Options:
   --quiet, -q         Suppress progress output
   --strict            Exit with error on any warning (inaccessible/failed files)
   -h, --help          Show this help message
+
+Master Agent Analysis (--agent):
+  When --agent is specified, the learn command invokes a master agent using
+  copilot -p to analyze the project structure. The agent:
+  
+  - Receives the project structure (file tree, package.json, imports)
+  - Outputs a JSON plan with intelligent folder groupings
+  - Each grouping has: group name, folders array, priority (1-5)
+  - Shows 'Analyzing project structure...' spinner during analysis
+  - Completes within 60 seconds for projects under 1000 files
+  
+  Requires: GitHub Copilot CLI installed and authenticated
 
 Path Exclusions:
   The following paths are excluded by default:
@@ -716,6 +774,7 @@ Description:
   - Dependencies from manifest files (package.json, requirements.txt, etc.)
   - Identified architectural patterns
   - AGENTS.md file discovery
+  - Master agent folder groupings (when --agent is used)
 
   Supports projects with up to 10,000 files for efficient analysis.
 
@@ -733,6 +792,8 @@ Exit Codes:
 Examples:
   ralph-tui learn                             # Analyze current directory
   ralph-tui learn ./my-project                # Analyze specific directory
+  ralph-tui learn --agent                     # Use master agent for folder groupings
+  ralph-tui learn --agent --json              # Get agent plan as JSON
   ralph-tui learn --depth shallow             # Quick structural scan
   ralph-tui learn --depth deep                # Full code pattern analysis
   ralph-tui learn --output ./docs/context.md  # Custom output location
@@ -761,6 +822,7 @@ export function parseLearnArgs(args: string[]): LearnArgs {
     quiet: false,
     include: [],
     strict: false,
+    agent: false,
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -779,6 +841,8 @@ export function parseLearnArgs(args: string[]): LearnArgs {
       result.quiet = true;
     } else if (arg === '--strict') {
       result.strict = true;
+    } else if (arg === '--agent') {
+      result.agent = true;
     } else if (arg === '--output' || arg === '-o') {
       const nextArg = args[++i];
       if (!nextArg || nextArg.startsWith('-')) {
@@ -1501,6 +1565,52 @@ function generateContextMarkdown(result: LearnResult): string {
     }
   }
 
+  // Master Agent Folder Groupings
+  if (result.masterAgentPlan) {
+    lines.push('## Master Agent Analysis');
+    lines.push('');
+    if (result.masterAgentPlan.summary) {
+      lines.push(`> ${result.masterAgentPlan.summary}`);
+      lines.push('');
+    }
+    
+    lines.push('### Folder Groupings');
+    lines.push('');
+    lines.push('| Priority | Group Name | Folders |');
+    lines.push('|----------|------------|---------|');
+    const sortedGroups = [...result.masterAgentPlan.groupings].sort((a, b) => a.priority - b.priority);
+    for (const group of sortedGroups) {
+      const folderList = group.folders.length > 3 
+        ? `${group.folders.slice(0, 3).join(', ')} (+${group.folders.length - 3} more)`
+        : group.folders.join(', ');
+      lines.push(`| ${group.priority} | ${group.name} | ${folderList} |`);
+    }
+    lines.push('');
+    
+    // Detailed groupings
+    lines.push('### Grouping Details');
+    lines.push('');
+    for (const group of sortedGroups) {
+      lines.push(`#### ${group.name} (Priority ${group.priority})`);
+      lines.push('');
+      for (const folder of group.folders) {
+        lines.push(`- ${folder}`);
+      }
+      lines.push('');
+    }
+    
+    if (result.masterAgentPlan.analysisOrder && result.masterAgentPlan.analysisOrder.length > 0) {
+      lines.push('### Suggested Analysis Order');
+      lines.push('');
+      lines.push('Follow this order when analyzing the codebase:');
+      lines.push('');
+      for (let i = 0; i < result.masterAgentPlan.analysisOrder.length; i++) {
+        lines.push(`${i + 1}. ${result.masterAgentPlan.analysisOrder[i]}`);
+      }
+      lines.push('');
+    }
+  }
+
   // Footer
   lines.push('---');
   lines.push('');
@@ -1816,6 +1926,396 @@ async function performDeepAnalysis(
 }
 
 /**
+ * Spinner frames for console animation
+ */
+const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+
+/**
+ * Build the prompt for master agent analysis
+ */
+function buildMasterAgentPrompt(
+  directoryTree: string,
+  packageJson: Record<string, unknown> | null,
+  imports: string[]
+): string {
+  const packageInfo = packageJson 
+    ? `\n\n## Package.json Summary\n\`\`\`json\n${JSON.stringify(packageJson, null, 2)}\n\`\`\``
+    : '';
+  
+  const importInfo = imports.length > 0
+    ? `\n\n## Sample Import Statements (first 50)\n\`\`\`\n${imports.slice(0, 50).join('\n')}\n\`\`\``
+    : '';
+
+  return `Analyze the following project structure and determine intelligent folder groupings based on code relationships.
+
+## Directory Tree
+\`\`\`
+${directoryTree}
+\`\`\`${packageInfo}${importInfo}
+
+## Your Task
+
+Based on the project structure, dependencies, and import patterns, create logical folder groupings that represent related functionality. Consider:
+- Feature boundaries (related components, services, utilities)
+- Architectural layers (API, business logic, data access)
+- Module dependencies (which folders commonly import from each other)
+- Domain boundaries (separate business domains/features)
+
+Return ONLY a valid JSON object with this exact structure, no other text:
+
+{
+  "groupings": [
+    {
+      "name": "Group Name (e.g., 'Core Components', 'API Layer')",
+      "folders": ["folder1", "folder2/subfolder"],
+      "priority": 1
+    }
+  ],
+  "summary": "Brief explanation of the grouping strategy",
+  "analysisOrder": ["folder1", "folder2"]
+}
+
+Rules for priority (1-5):
+- 1 = Highest priority (core/critical code, foundation)
+- 2 = High priority (main features, primary API)
+- 3 = Medium priority (secondary features, utilities)
+- 4 = Low priority (tests, docs, configs)
+- 5 = Lowest priority (generated code, vendor, build)
+
+IMPORTANT: Return ONLY the JSON object. No markdown code blocks, no explanation text before or after.`;
+}
+
+/**
+ * Extract import statements from source files
+ */
+function extractImportStatements(
+  rootPath: string,
+  maxFiles: number = 100
+): string[] {
+  const imports: string[] = [];
+  
+  function scanDir(dirPath: string, depth: number = 0): void {
+    if (depth > 3 || imports.length >= maxFiles * 5) return;
+    
+    try {
+      const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+      
+      for (const entry of entries) {
+        if (imports.length >= maxFiles * 5) break;
+        
+        if (entry.isDirectory() && !IGNORED_DIRS.has(entry.name) && !entry.name.startsWith('.')) {
+          scanDir(path.join(dirPath, entry.name), depth + 1);
+        } else if (entry.isFile()) {
+          const ext = path.extname(entry.name);
+          if (['.ts', '.tsx', '.js', '.jsx', '.mjs'].includes(ext)) {
+            try {
+              const content = fs.readFileSync(path.join(dirPath, entry.name), 'utf-8');
+              const lines = content.split('\n').slice(0, 30); // Only check first 30 lines
+              for (const line of lines) {
+                const match = line.match(/^import\s+.*?from\s+['"]([^'"]+)['"]/) ||
+                              line.match(/require\(['"]([^'"]+)['"]\)/);
+                if (match) {
+                  imports.push(match[0]);
+                }
+              }
+            } catch {
+              // Skip unreadable files
+            }
+          }
+        }
+      }
+    } catch {
+      // Skip inaccessible directories
+    }
+  }
+  
+  scanDir(rootPath);
+  return imports;
+}
+
+/**
+ * Parse package.json for master agent context
+ */
+function parsePackageJsonForAgent(rootPath: string): Record<string, unknown> | null {
+  const pkgPath = path.join(rootPath, 'package.json');
+  try {
+    if (fs.existsSync(pkgPath)) {
+      const content = fs.readFileSync(pkgPath, 'utf-8');
+      const pkg = JSON.parse(content);
+      // Return only relevant fields for analysis
+      return {
+        name: pkg.name,
+        description: pkg.description,
+        main: pkg.main,
+        type: pkg.type,
+        scripts: pkg.scripts ? Object.keys(pkg.scripts) : [],
+        dependencies: pkg.dependencies ? Object.keys(pkg.dependencies) : [],
+        devDependencies: pkg.devDependencies ? Object.keys(pkg.devDependencies) : [],
+      };
+    }
+  } catch {
+    // Skip on parse error
+  }
+  return null;
+}
+
+/**
+ * Parse JSON from potentially wrapped output
+ */
+function parseJsonFromOutput(output: string): MasterAgentPlan | null {
+  // Try direct parse first
+  try {
+    const parsed = JSON.parse(output.trim());
+    if (parsed.groupings && Array.isArray(parsed.groupings)) {
+      return parsed as MasterAgentPlan;
+    }
+  } catch {
+    // Continue to try extraction
+  }
+  
+  // Try to extract JSON from markdown code blocks
+  const jsonBlockMatch = output.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+  if (jsonBlockMatch) {
+    try {
+      const parsed = JSON.parse(jsonBlockMatch[1].trim());
+      if (parsed.groupings && Array.isArray(parsed.groupings)) {
+        return parsed as MasterAgentPlan;
+      }
+    } catch {
+      // Continue to try other methods
+    }
+  }
+  
+  // Try to find JSON object in output
+  const jsonMatch = output.match(/\{[\s\S]*"groupings"[\s\S]*\}/);
+  if (jsonMatch) {
+    try {
+      const parsed = JSON.parse(jsonMatch[0]);
+      if (parsed.groupings && Array.isArray(parsed.groupings)) {
+        return parsed as MasterAgentPlan;
+      }
+    } catch {
+      // Failed to parse
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Validate the master agent plan
+ */
+function validateMasterAgentPlan(plan: MasterAgentPlan): string | null {
+  if (!plan.groupings || !Array.isArray(plan.groupings)) {
+    return 'Invalid plan: missing groupings array';
+  }
+  
+  for (let i = 0; i < plan.groupings.length; i++) {
+    const group = plan.groupings[i];
+    if (!group.name || typeof group.name !== 'string') {
+      return `Invalid grouping at index ${i}: missing or invalid name`;
+    }
+    if (!group.folders || !Array.isArray(group.folders)) {
+      return `Invalid grouping at index ${i}: missing or invalid folders array`;
+    }
+    if (typeof group.priority !== 'number' || group.priority < 1 || group.priority > 5) {
+      return `Invalid grouping at index ${i}: priority must be a number between 1 and 5`;
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Invoke master agent using copilot -p to analyze project structure
+ */
+export async function invokeMasterAgentAnalysis(
+  rootPath: string,
+  directoryTree: string,
+  quiet: boolean = false,
+  verbose: boolean = false
+): Promise<MasterAgentResult> {
+  const startTime = Date.now();
+  const timeout = 60000; // 60 seconds
+  
+  // Gather context for the agent
+  const packageJson = parsePackageJsonForAgent(rootPath);
+  const imports = extractImportStatements(rootPath);
+  
+  // Build the prompt
+  const prompt = buildMasterAgentPrompt(directoryTree, packageJson, imports);
+  
+  if (verbose) {
+    console.log('Master agent prompt length:', prompt.length);
+  }
+  
+  // Start spinner animation
+  let spinnerInterval: ReturnType<typeof setInterval> | null = null;
+  let frameIndex = 0;
+  
+  if (!quiet) {
+    spinnerInterval = setInterval(() => {
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      process.stdout.write(`\r${SPINNER_FRAMES[frameIndex]} Analyzing project structure... (${elapsed}s)`);
+      frameIndex = (frameIndex + 1) % SPINNER_FRAMES.length;
+    }, 80);
+  }
+  
+  return new Promise((resolve) => {
+    const args = [
+      '--silent',
+      '--stream', 'off',
+      '--allow-all-tools',
+    ];
+    
+    if (verbose) {
+      console.log(`\nRunning: copilot ${args.join(' ')}`);
+    }
+    
+    const proc = spawn('copilot', args, {
+      cwd: rootPath,
+      env: { ...process.env },
+      stdio: ['pipe', 'pipe', 'pipe'],
+      shell: true,
+    });
+    
+    let stdout = '';
+    let stderr = '';
+    
+    proc.stdout?.on('data', (data: Buffer) => {
+      stdout += data.toString();
+    });
+    
+    proc.stderr?.on('data', (data: Buffer) => {
+      stderr += data.toString();
+    });
+    
+    // Write the prompt to stdin
+    proc.stdin?.write(prompt);
+    proc.stdin?.end();
+    
+    const cleanup = () => {
+      if (spinnerInterval) {
+        clearInterval(spinnerInterval);
+        spinnerInterval = null;
+        if (!quiet) {
+          process.stdout.write('\r' + ' '.repeat(60) + '\r');
+        }
+      }
+    };
+    
+    proc.on('error', (error) => {
+      cleanup();
+      const durationMs = Date.now() - startTime;
+      
+      // Check if copilot is not installed
+      if (error.message.includes('ENOENT') || error.message.includes('not found')) {
+        resolve({
+          success: false,
+          error: 'Copilot CLI not found. Install with: winget install GitHub.Copilot (Windows) or brew install copilot-cli (macOS/Linux)',
+          durationMs,
+        });
+        return;
+      }
+      
+      resolve({
+        success: false,
+        error: `Failed to execute Copilot CLI: ${error.message}`,
+        durationMs,
+      });
+    });
+    
+    proc.on('close', (code) => {
+      cleanup();
+      const durationMs = Date.now() - startTime;
+      
+      if (code !== 0) {
+        const errorOutput = stderr || stdout;
+        
+        if (errorOutput.includes('not found') || errorOutput.includes('command not found')) {
+          resolve({
+            success: false,
+            error: 'Copilot CLI not found. Install with: winget install GitHub.Copilot (Windows) or brew install copilot-cli (macOS/Linux)',
+            durationMs,
+          });
+          return;
+        }
+        
+        if (errorOutput.includes('authentication') || errorOutput.includes('unauthorized')) {
+          resolve({
+            success: false,
+            error: 'Copilot CLI authentication failed. Please run "copilot auth" to authenticate.',
+            durationMs,
+          });
+          return;
+        }
+        
+        resolve({
+          success: false,
+          error: errorOutput || `Copilot CLI exited with code ${code}`,
+          durationMs,
+        });
+        return;
+      }
+      
+      // Parse the JSON output
+      const plan = parseJsonFromOutput(stdout);
+      
+      if (!plan) {
+        if (verbose) {
+          console.log('\nRaw output:', stdout);
+        }
+        resolve({
+          success: false,
+          error: 'Failed to parse master agent output as JSON. The agent did not return valid folder groupings.',
+          durationMs,
+        });
+        return;
+      }
+      
+      // Validate the plan
+      const validationError = validateMasterAgentPlan(plan);
+      if (validationError) {
+        resolve({
+          success: false,
+          error: validationError,
+          durationMs,
+        });
+        return;
+      }
+      
+      resolve({
+        success: true,
+        plan,
+        durationMs,
+      });
+    });
+    
+    // Timeout handling
+    const timeoutId = setTimeout(() => {
+      proc.kill('SIGTERM');
+      setTimeout(() => {
+        if (!proc.killed) {
+          proc.kill('SIGKILL');
+        }
+      }, 5000);
+      
+      cleanup();
+      resolve({
+        success: false,
+        error: `Master agent analysis timed out after ${timeout / 1000} seconds`,
+        durationMs: timeout,
+      });
+    }, timeout);
+    
+    // Clear timeout if process completes
+    proc.on('close', () => {
+      clearTimeout(timeoutId);
+    });
+  });
+}
+
+/**
  * Analyze a project directory
  */
 export async function analyzeProject(
@@ -1823,7 +2323,9 @@ export async function analyzeProject(
   depth: DepthLevel = 'standard',
   progressReporter?: ProgressReporter,
   includePatterns: string[] = [],
-  verbose: boolean = false
+  verbose: boolean = false,
+  useAgent: boolean = false,
+  quiet: boolean = false
 ): Promise<LearnResult> {
   const startTime = Date.now();
   const maxFiles = 10000;
@@ -1916,6 +2418,27 @@ export async function analyzeProject(
     codePatterns = await performDeepAnalysis(rootPath, scanResult.warnings, 500, progressReporter, exclusionManager);
   }
 
+  // Master agent analysis
+  let masterAgentPlan: MasterAgentPlan | undefined;
+  if (useAgent) {
+    if (progressReporter) {
+      progressReporter.stop(); // Stop standard progress, agent has its own spinner
+    }
+    
+    const agentResult = await invokeMasterAgentAnalysis(
+      rootPath,
+      directoryTree,
+      quiet,
+      verbose
+    );
+    
+    if (agentResult.success && agentResult.plan) {
+      masterAgentPlan = agentResult.plan;
+    } else if (!quiet) {
+      console.error(`\n⚠️  Master agent analysis failed: ${agentResult.error}`);
+    }
+  }
+
   const truncated = scanResult.files >= maxFiles;
   const durationMs = Date.now() - startTime;
 
@@ -1944,6 +2467,7 @@ export async function analyzeProject(
     warnings: scanResult.warnings.length > 0 ? scanResult.warnings : undefined,
     skippedFiles: skippedFiles > 0 ? skippedFiles : undefined,
     failedFiles: failedFiles > 0 ? failedFiles : undefined,
+    masterAgentPlan,
   };
 }
 
@@ -2093,6 +2617,35 @@ function printHumanResult(result: LearnResult, verbose: boolean): void {
     console.log('');
   }
 
+  // Master Agent Plan (when --agent is used)
+  if (result.masterAgentPlan) {
+    console.log('  🤖 Master Agent Analysis:');
+    if (result.masterAgentPlan.summary) {
+      console.log(`    Summary: ${result.masterAgentPlan.summary}`);
+    }
+    console.log('');
+    console.log('  Folder Groupings:');
+    const sortedGroups = [...result.masterAgentPlan.groupings].sort((a, b) => a.priority - b.priority);
+    for (const group of sortedGroups) {
+      console.log(`    [Priority ${group.priority}] ${group.name}`);
+      for (const folder of group.folders.slice(0, 5)) {
+        console.log(`      • ${folder}`);
+      }
+      if (group.folders.length > 5) {
+        console.log(`      ... and ${group.folders.length - 5} more folders`);
+      }
+    }
+    console.log('');
+    if (result.masterAgentPlan.analysisOrder && result.masterAgentPlan.analysisOrder.length > 0) {
+      console.log('  Suggested Analysis Order:');
+      console.log(`    ${result.masterAgentPlan.analysisOrder.slice(0, 10).join(' → ')}`);
+      if (result.masterAgentPlan.analysisOrder.length > 10) {
+        console.log(`    ... and ${result.masterAgentPlan.analysisOrder.length - 10} more`);
+      }
+      console.log('');
+    }
+  }
+
   console.log('───────────────────────────────────────────────────────────────');
   console.log('  Analysis complete. AI agents can now better understand');
   console.log('  this codebase structure and conventions.');
@@ -2115,6 +2668,9 @@ export async function executeLearnCommand(args: string[]): Promise<void> {
     if (!parsedArgs.json && !parsedArgs.quiet) {
       console.log(`Analyzing project at: ${parsedArgs.path}`);
       console.log(`Depth level: ${parsedArgs.depth}`);
+      if (parsedArgs.agent) {
+        console.log(`Master agent: enabled (using copilot -p)`);
+      }
       if (parsedArgs.include.length > 0) {
         console.log(`Include patterns: ${parsedArgs.include.join(', ')}`);
       }
@@ -2130,7 +2686,9 @@ export async function executeLearnCommand(args: string[]): Promise<void> {
       parsedArgs.depth, 
       progressReporter,
       parsedArgs.include,
-      parsedArgs.verbose
+      parsedArgs.verbose,
+      parsedArgs.agent,
+      parsedArgs.quiet || parsedArgs.json
     );
 
     // Stop progress reporter and set generating phase
