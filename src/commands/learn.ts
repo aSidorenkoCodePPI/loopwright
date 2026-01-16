@@ -7,6 +7,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import * as os from 'node:os';
 import { spawn } from 'node:child_process';
 
 /**
@@ -502,6 +503,79 @@ export interface LearnResult {
 
   /** Master agent analysis plan (when --agent is used) */
   masterAgentPlan?: MasterAgentPlan;
+
+  /** Parallel worker execution results (when --agent is used without --dry-run) */
+  workerResults?: WorkerExecutionSummary;
+}
+
+/**
+ * Resource usage snapshot at a point in time.
+ */
+export interface ResourceSnapshot {
+  /** Timestamp (ISO 8601) */
+  timestamp: string;
+  /** CPU usage percentage (0-100 per core, can exceed 100 on multi-core) */
+  cpuPercent: number;
+  /** Memory usage in megabytes */
+  memoryMB: number;
+  /** Active worker count at this snapshot */
+  activeWorkers: number;
+}
+
+/**
+ * Result of a single worker execution.
+ */
+export interface WorkerResult {
+  /** Group name this worker was assigned */
+  groupName: string;
+  /** Folders this worker analyzed */
+  folders: string[];
+  /** Whether the worker completed successfully */
+  success: boolean;
+  /** Duration in milliseconds */
+  durationMs: number;
+  /** Worker output (stdout) */
+  stdout: string;
+  /** Worker errors (stderr) */
+  stderr: string;
+  /** Error message if failed */
+  error?: string;
+  /** Exit code */
+  exitCode?: number;
+  /** Timestamp when worker started (ISO 8601) */
+  startedAt: string;
+  /** Timestamp when worker completed (ISO 8601) */
+  completedAt: string;
+}
+
+/**
+ * Summary of parallel worker execution.
+ */
+export interface WorkerExecutionSummary {
+  /** Total number of workers spawned */
+  workerCount: number;
+  /** Number of successful workers */
+  successCount: number;
+  /** Number of failed workers */
+  failedCount: number;
+  /** Total wall-clock time for parallel execution (ms) */
+  totalDurationMs: number;
+  /** Sum of individual worker durations (for speedup calculation) */
+  sequentialDurationMs: number;
+  /** Speedup factor (sequential / parallel) */
+  speedupFactor: number;
+  /** Individual worker results */
+  workers: WorkerResult[];
+  /** Resource usage samples during execution */
+  resourceSnapshots: ResourceSnapshot[];
+  /** Peak memory usage in MB */
+  peakMemoryMB: number;
+  /** Peak CPU usage percentage */
+  peakCpuPercent: number;
+  /** Timestamp when parallel execution started (ISO 8601) */
+  startedAt: string;
+  /** Timestamp when parallel execution completed (ISO 8601) */
+  completedAt: string;
 }
 
 /**
@@ -1698,6 +1772,43 @@ function generateContextMarkdown(result: LearnResult): string {
     }
   }
 
+  // Parallel Worker Execution Results
+  if (result.workerResults) {
+    const wr = result.workerResults;
+    lines.push('## Parallel Worker Execution');
+    lines.push('');
+    lines.push('Workers were executed in parallel to analyze the codebase faster.');
+    lines.push('');
+    lines.push('### Execution Summary');
+    lines.push('');
+    lines.push(`- **Workers Spawned**: ${wr.workerCount}`);
+    lines.push(`- **Successful**: ${wr.successCount}`);
+    lines.push(`- **Failed**: ${wr.failedCount}`);
+    lines.push(`- **Parallel Duration**: ${(wr.totalDurationMs / 1000).toFixed(2)}s`);
+    lines.push(`- **Sequential Duration** (if run one-by-one): ${(wr.sequentialDurationMs / 1000).toFixed(2)}s`);
+    lines.push(`- **Speedup Factor**: ${wr.speedupFactor.toFixed(2)}x`);
+    lines.push('');
+    lines.push('### Resource Usage');
+    lines.push('');
+    lines.push(`- **Peak CPU**: ${wr.peakCpuPercent}%`);
+    lines.push(`- **Peak Memory**: ${wr.peakMemoryMB}MB`);
+    lines.push(`- **Resource Samples**: ${wr.resourceSnapshots.length}`);
+    lines.push('');
+    
+    // Show individual worker results
+    lines.push('### Worker Results');
+    lines.push('');
+    lines.push('| Worker | Status | Duration | Folders |');
+    lines.push('|--------|--------|----------|---------|');
+    for (const worker of wr.workers) {
+      const status = worker.success ? '✓ Success' : '✗ Failed';
+      const duration = `${(worker.durationMs / 1000).toFixed(2)}s`;
+      const folderCount = worker.folders.length.toString();
+      lines.push(`| ${worker.groupName} | ${status} | ${duration} | ${folderCount} |`);
+    }
+    lines.push('');
+  }
+
   // Footer
   lines.push('---');
   lines.push('');
@@ -2610,6 +2721,311 @@ export async function analyzeProject(
 }
 
 /**
+ * Get current system resource usage.
+ * Returns CPU percentage and memory usage in MB.
+ */
+function getResourceUsage(): { cpuPercent: number; memoryMB: number } {
+  const memoryUsage = process.memoryUsage();
+  const memoryMB = Math.round(memoryUsage.heapUsed / 1024 / 1024);
+  
+  // Get CPU usage from os module (load average on Unix, fallback on Windows)
+  const cpus = os.cpus();
+  let cpuPercent = 0;
+  
+  if (cpus.length > 0) {
+    // Calculate average CPU usage across all cores
+    for (const cpu of cpus) {
+      const total = cpu.times.user + cpu.times.nice + cpu.times.sys + cpu.times.idle + cpu.times.irq;
+      const usage = ((total - cpu.times.idle) / total) * 100;
+      cpuPercent += usage;
+    }
+    cpuPercent = Math.round(cpuPercent / cpus.length);
+  }
+  
+  return { cpuPercent, memoryMB };
+}
+
+/**
+ * Build prompt for worker agent analysis of a folder group.
+ */
+function buildWorkerPrompt(group: FolderGrouping, rootPath: string): string {
+  const folderList = group.folders.map(f => `- ${f}`).join('\n');
+  
+  return `Analyze the following code folders and provide a summary of their purpose, architecture, and key patterns.
+
+## Folder Group: ${group.name}
+Priority: ${group.priority}
+Root Path: ${rootPath}
+
+## Folders to Analyze:
+${folderList}
+
+## Your Task:
+1. For each folder, identify:
+   - Primary purpose/responsibility
+   - Key files and their roles
+   - Dependencies on other folders
+   - Code patterns used
+
+2. Provide a brief summary of the entire group's architecture
+
+Return your analysis as a structured report. Focus on information useful for understanding the codebase.`;
+}
+
+/**
+ * Execute a single worker for a folder group.
+ * Spawns copilot -p with the folder context and captures output.
+ */
+async function executeWorker(
+  group: FolderGrouping,
+  rootPath: string,
+  verbose: boolean = false
+): Promise<WorkerResult> {
+  const startedAt = new Date();
+  const prompt = buildWorkerPrompt(group, rootPath);
+  
+  return new Promise((resolve) => {
+    const args = [
+      '--silent',
+      '--stream', 'off',
+      '--allow-all-tools',
+    ];
+    
+    if (verbose) {
+      console.log(`\n[Worker: ${group.name}] Starting with ${group.folders.length} folders...`);
+    }
+    
+    const proc = spawn('copilot', args, {
+      cwd: rootPath,
+      env: { ...process.env },
+      stdio: ['pipe', 'pipe', 'pipe'],
+      shell: true,
+    });
+    
+    let stdout = '';
+    let stderr = '';
+    
+    proc.stdout?.on('data', (data: Buffer) => {
+      stdout += data.toString();
+    });
+    
+    proc.stderr?.on('data', (data: Buffer) => {
+      stderr += data.toString();
+    });
+    
+    // Write the prompt to stdin
+    proc.stdin?.write(prompt);
+    proc.stdin?.end();
+    
+    proc.on('error', (error) => {
+      const completedAt = new Date();
+      resolve({
+        groupName: group.name,
+        folders: group.folders,
+        success: false,
+        durationMs: completedAt.getTime() - startedAt.getTime(),
+        stdout,
+        stderr,
+        error: `Failed to execute worker: ${error.message}`,
+        startedAt: startedAt.toISOString(),
+        completedAt: completedAt.toISOString(),
+      });
+    });
+    
+    proc.on('close', (code) => {
+      const completedAt = new Date();
+      resolve({
+        groupName: group.name,
+        folders: group.folders,
+        success: code === 0,
+        durationMs: completedAt.getTime() - startedAt.getTime(),
+        stdout,
+        stderr,
+        exitCode: code ?? undefined,
+        error: code !== 0 ? `Worker exited with code ${code}` : undefined,
+        startedAt: startedAt.toISOString(),
+        completedAt: completedAt.toISOString(),
+      });
+    });
+    
+    // Timeout after 120 seconds per worker
+    const timeoutId = setTimeout(() => {
+      proc.kill('SIGTERM');
+      setTimeout(() => {
+        if (!proc.killed) {
+          proc.kill('SIGKILL');
+        }
+      }, 5000);
+    }, 120000);
+    
+    proc.on('close', () => {
+      clearTimeout(timeoutId);
+    });
+  });
+}
+
+/**
+ * Execute all workers in parallel and monitor resources.
+ * All workers spawn immediately after master agent completes.
+ */
+export async function executeWorkersInParallel(
+  plan: MasterAgentPlan,
+  rootPath: string,
+  quiet: boolean = false,
+  verbose: boolean = false
+): Promise<WorkerExecutionSummary> {
+  const startedAt = new Date();
+  const resourceSnapshots: ResourceSnapshot[] = [];
+  let peakMemoryMB = 0;
+  let peakCpuPercent = 0;
+  
+  // Start resource monitoring
+  const monitoringInterval = setInterval(() => {
+    const usage = getResourceUsage();
+    const activeWorkers = plan.groupings.length; // Simplified - all spawn at once
+    
+    resourceSnapshots.push({
+      timestamp: new Date().toISOString(),
+      cpuPercent: usage.cpuPercent,
+      memoryMB: usage.memoryMB,
+      activeWorkers,
+    });
+    
+    if (usage.memoryMB > peakMemoryMB) peakMemoryMB = usage.memoryMB;
+    if (usage.cpuPercent > peakCpuPercent) peakCpuPercent = usage.cpuPercent;
+  }, 1000); // Sample every second
+  
+  // Start spinner animation for parallel execution
+  let spinnerInterval: ReturnType<typeof setInterval> | null = null;
+  let frameIndex = 0;
+  const workerCount = plan.groupings.length;
+  
+  if (!quiet) {
+    spinnerInterval = setInterval(() => {
+      const elapsed = ((Date.now() - startedAt.getTime()) / 1000).toFixed(1);
+      process.stdout.write(`\r${SPINNER_FRAMES[frameIndex]} Executing ${workerCount} workers in parallel... (${elapsed}s)`);
+      frameIndex = (frameIndex + 1) % SPINNER_FRAMES.length;
+    }, 80);
+  }
+  
+  try {
+    // AC1: All workers spawn immediately after master agent completes
+    // AC2: Each worker runs copilot -p with its assigned folder context
+    // AC3: Workers operate independently without blocking each other
+    // AC4: Worker count matches the number of folder groups from master plan
+    const workerPromises = plan.groupings.map(group => 
+      executeWorker(group, rootPath, verbose)
+    );
+    
+    // Wait for all workers to complete in parallel
+    const workers = await Promise.all(workerPromises);
+    
+    const completedAt = new Date();
+    const totalDurationMs = completedAt.getTime() - startedAt.getTime();
+    
+    // Stop monitoring
+    clearInterval(monitoringInterval);
+    
+    // Stop spinner
+    if (spinnerInterval) {
+      clearInterval(spinnerInterval);
+      if (!quiet) {
+        process.stdout.write('\r' + ' '.repeat(70) + '\r');
+      }
+    }
+    
+    // Calculate statistics
+    const successCount = workers.filter(w => w.success).length;
+    const failedCount = workers.filter(w => !w.success).length;
+    
+    // AC5: Total analysis time is significantly less than sum of individual folder times
+    const sequentialDurationMs = workers.reduce((sum, w) => sum + w.durationMs, 0);
+    const speedupFactor = sequentialDurationMs > 0 ? sequentialDurationMs / totalDurationMs : 1;
+    
+    // Take final resource snapshot
+    const finalUsage = getResourceUsage();
+    resourceSnapshots.push({
+      timestamp: completedAt.toISOString(),
+      cpuPercent: finalUsage.cpuPercent,
+      memoryMB: finalUsage.memoryMB,
+      activeWorkers: 0,
+    });
+    
+    if (finalUsage.memoryMB > peakMemoryMB) peakMemoryMB = finalUsage.memoryMB;
+    if (finalUsage.cpuPercent > peakCpuPercent) peakCpuPercent = finalUsage.cpuPercent;
+    
+    // AC6: System resources (CPU, memory) are monitored and logged
+    if (!quiet && verbose) {
+      console.log(`\n[Resources] Peak CPU: ${peakCpuPercent}%, Peak Memory: ${peakMemoryMB}MB`);
+      console.log(`[Resources] Snapshots collected: ${resourceSnapshots.length}`);
+    }
+    
+    return {
+      workerCount,
+      successCount,
+      failedCount,
+      totalDurationMs,
+      sequentialDurationMs,
+      speedupFactor,
+      workers,
+      resourceSnapshots,
+      peakMemoryMB,
+      peakCpuPercent,
+      startedAt: startedAt.toISOString(),
+      completedAt: completedAt.toISOString(),
+    };
+  } catch (error) {
+    // Stop monitoring on error
+    clearInterval(monitoringInterval);
+    
+    if (spinnerInterval) {
+      clearInterval(spinnerInterval);
+      if (!quiet) {
+        process.stdout.write('\r' + ' '.repeat(70) + '\r');
+      }
+    }
+    
+    throw error;
+  }
+}
+
+/**
+ * Print worker execution results in human-readable format.
+ */
+function printWorkerResults(summary: WorkerExecutionSummary, verbose: boolean): void {
+  console.log('');
+  console.log('───────────────────────────────────────────────────────────────');
+  console.log('  🔄 Parallel Worker Execution Results');
+  console.log('───────────────────────────────────────────────────────────────');
+  console.log('');
+  console.log(`  Workers:        ${summary.workerCount}`);
+  console.log(`  Successful:     ${summary.successCount}`);
+  console.log(`  Failed:         ${summary.failedCount}`);
+  console.log(`  Total Time:     ${(summary.totalDurationMs / 1000).toFixed(2)}s (parallel)`);
+  console.log(`  Sequential Time: ${(summary.sequentialDurationMs / 1000).toFixed(2)}s (if sequential)`);
+  console.log(`  Speedup Factor: ${summary.speedupFactor.toFixed(2)}x`);
+  console.log('');
+  console.log('  📊 Resource Usage:');
+  console.log(`    Peak CPU:     ${summary.peakCpuPercent}%`);
+  console.log(`    Peak Memory:  ${summary.peakMemoryMB}MB`);
+  console.log('');
+  
+  // Show individual worker results
+  if (verbose) {
+    console.log('  📋 Worker Details:');
+    for (const worker of summary.workers) {
+      const status = worker.success ? '✓' : '✗';
+      const duration = (worker.durationMs / 1000).toFixed(2);
+      console.log(`    ${status} ${worker.groupName} (${duration}s) - ${worker.folders.length} folders`);
+      if (!worker.success && worker.error) {
+        console.log(`      Error: ${worker.error}`);
+      }
+    }
+    console.log('');
+  }
+}
+
+/**
  * Print dry-run result showing the planned split without executing workers.
  */
 function printDryRunResult(result: LearnResult, args: LearnArgs): void {
@@ -2868,6 +3284,14 @@ function printHumanResult(result: LearnResult, verbose: boolean): void {
     }
   }
 
+  // Worker execution results (already printed by printWorkerResults, but summarize here too)
+  if (result.workerResults) {
+    const wr = result.workerResults;
+    console.log('  🔄 Parallel Workers: See detailed results above');
+    console.log(`    Speedup: ${wr.speedupFactor.toFixed(2)}x faster than sequential`);
+    console.log('');
+  }
+
   console.log('───────────────────────────────────────────────────────────────');
   console.log('  Analysis complete. AI agents can now better understand');
   console.log('  this codebase structure and conventions.');
@@ -2928,6 +3352,37 @@ export async function executeLearnCommand(args: string[]): Promise<void> {
     if (parsedArgs.dryRun) {
       printDryRunResult(result, parsedArgs);
       process.exit(0);
+    }
+
+    // Execute parallel workers if master agent produced a plan
+    // AC1: All workers spawn immediately after master agent completes
+    // AC4: Worker count matches the number of folder groups from master plan
+    if (parsedArgs.agent && result.masterAgentPlan && result.masterAgentPlan.groupings.length > 0) {
+      if (!parsedArgs.quiet && !parsedArgs.json) {
+        console.log(`\n🚀 Master agent complete. Spawning ${result.masterAgentPlan.groupings.length} workers in parallel...`);
+      }
+      
+      try {
+        const workerSummary = await executeWorkersInParallel(
+          result.masterAgentPlan,
+          parsedArgs.path,
+          parsedArgs.quiet || parsedArgs.json,
+          parsedArgs.verbose
+        );
+        
+        // Attach worker results to the result object
+        result.workerResults = workerSummary;
+        
+        // Print worker results (unless JSON or quiet mode)
+        if (!parsedArgs.json && !parsedArgs.quiet) {
+          printWorkerResults(workerSummary, parsedArgs.verbose);
+        }
+      } catch (workerError) {
+        if (!parsedArgs.quiet && !parsedArgs.json) {
+          console.error(`\n⚠️  Worker execution failed: ${workerError instanceof Error ? workerError.message : String(workerError)}`);
+        }
+        // Continue even if workers fail - we still have the master plan
+      }
     }
 
     // Generate and write context file (unless JSON output mode)
