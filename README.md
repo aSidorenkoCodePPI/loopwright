@@ -200,6 +200,80 @@ Repeat until all tasks are complete.
 - **Cross-iteration Context**: Automatic progress tracking between tasks
 - **Cross-platform**: Works on Windows, macOS, and Linux
 
+## Project Analysis
+
+Ralph can analyze your project structure to help AI agents understand the codebase. The `learn` command scans your project, detects patterns, and generates a context file (`ralph-context.md`) that agents can use for better code understanding.
+
+### Basic Usage
+
+```bash
+# Analyze current directory
+ralph-tui learn
+
+# Analyze a specific path
+ralph-tui learn ./my-project
+
+# Custom output file
+ralph-tui learn --output ./docs/context.md
+```
+
+### Analysis Depth
+
+```bash
+# Quick structural scan
+ralph-tui learn --depth shallow
+
+# Standard analysis (default)
+ralph-tui learn --depth standard
+
+# Deep analysis with code patterns
+ralph-tui learn --depth deep
+```
+
+### AI-Powered Analysis
+
+Use the `--agent` flag to enable intelligent folder grouping via GitHub Copilot:
+
+```bash
+# Let AI analyze and group related code
+ralph-tui learn --agent
+
+# Preview the analysis plan without executing
+ralph-tui learn --agent --dry-run
+
+# Choose a specific splitting strategy
+ralph-tui learn --agent --strategy domain
+```
+
+**Splitting Strategies:**
+
+| Strategy | Description |
+|----------|-------------|
+| `auto` | Let the AI choose the best strategy (default) |
+| `top-level` | Split by top-level directories |
+| `domain` | Group by code dependencies/imports |
+| `balanced` | Distribute files evenly across workers |
+
+### What Gets Analyzed
+
+- **Project structure**: Directory tree and organization
+- **Project types**: Detected frameworks and languages (TypeScript, React, etc.)
+- **Conventions**: Coding patterns and standards
+- **Dependencies**: Package relationships
+- **Architectural patterns**: Design patterns in use
+
+### Path Exclusions
+
+The following are excluded by default:
+- Build directories: `node_modules/`, `dist/`, `build/`, `.next/`
+- Binary files: images, videos, archives, compiled files
+- Patterns from `.gitignore` and `.ralphignore`
+
+Override exclusions with `--include`:
+```bash
+ralph-tui learn --include "dist/**" --include "*.min.js"
+```
+
 ## CLI Commands
 
 | Command | Description |
@@ -210,6 +284,7 @@ Repeat until all tasks are complete.
 | `ralph-tui status` | Check session status |
 | `ralph-tui logs` | View iteration output logs |
 | `ralph-tui setup` | Run interactive project setup |
+| `ralph-tui learn` | Analyze project for AI agents |
 | `ralph-tui create-prd` | Create a new PRD interactively |
 | `ralph-tui create-prd --jira` | Create PRD from Jira ticket |
 | `ralph-tui jira-prd` | List assigned Jira issues |
