@@ -20,7 +20,7 @@ import type { JiraIssue } from '../commands/jira-prd.js';
 /**
  * Default system prompt for PRD generation.
  */
-export const DEFAULT_PRD_SKILL = 'ralph-tui-prd';
+export const DEFAULT_PRD_SKILL = 'loopwright-prd';
 
 export function buildPrdSystemPrompt(skillName: string): string {
   return `You are helping create a Product Requirements Document (PRD) using the ${skillName} skill.

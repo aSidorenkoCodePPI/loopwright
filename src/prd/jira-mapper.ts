@@ -3,7 +3,7 @@
  * Maps Jira issue fields to PRD document sections.
  * Handles missing fields gracefully with defaults or omission.
  * Supports linked issues as sub-tasks with dependency relationships.
- * Generates prd.json output compatible with ralph-tui.
+ * Generates prd.json output compatible with loopwright.
  */
 
 import { writeFile, mkdir, access, constants } from 'node:fs/promises';

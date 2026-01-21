@@ -1,5 +1,5 @@
 /**
- * ABOUTME: RunApp component for the Ralph TUI execution view.
+ * ABOUTME: RunApp component for the Loopwright TUI execution view.
  * Integrates with the execution engine to display real-time progress.
  * Handles graceful interruption with confirmation dialog.
  */
@@ -8,7 +8,7 @@ import { useKeyboard, useTerminalDimensions } from '@opentui/react';
 import type { ReactNode } from 'react';
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { colors, layout } from '../theme.js';
-import type { RalphStatus, TaskStatus } from '../theme.js';
+import type { LoopwrightStatus, TaskStatus } from '../theme.js';
 import type { TaskItem, BlockerInfo, DetailsViewMode, IterationTimingInfo, SubagentTreeNode } from '../types.js';
 import { Header } from './Header.js';
 import { Footer } from './Footer.js';
@@ -307,7 +307,7 @@ export function RunApp({
   });
   const [selectedIndex, setSelectedIndex] = useState(0);
   // Start in 'ready' state if we have onStart callback (waiting for user to start)
-  const [status, setStatus] = useState<RalphStatus>(onStart ? 'ready' : 'running');
+  const [status, setStatus] = useState<LoopwrightStatus>(onStart ? 'ready' : 'running');
   const [currentIteration, setCurrentIteration] = useState(0);
   const [maxIterations, setMaxIterations] = useState(() => {
     // Initialize from engine if available
@@ -318,7 +318,7 @@ export function RunApp({
   // Streaming parser for live output - extracts readable content and prevents memory bloat
   const outputParserRef = useRef(new StreamingOutputParser());
   const [elapsedTime, setElapsedTime] = useState(0);
-  const [epicName] = useState('Ralph');
+  const [epicName] = useState('Loopwright');
   // Derive agent/tracker names from config - these are displayed in the header
   const agentName = storedConfig?.defaultAgent || storedConfig?.agent || 'copilot';
   // Use trackerType (from resolved config.tracker.plugin) as priority since it's the actual plugin in use
@@ -1253,7 +1253,7 @@ export function RunApp({
       {/* Interrupt Confirmation Dialog */}
       <ConfirmationDialog
         visible={showInterruptDialog}
-        title="⚠ Interrupt Ralph?"
+        title="⚠ Interrupt Loopwright?"
         message="Current iteration will be terminated."
         hint="[y] Yes  [n/Esc] No  [Ctrl+C] Force quit"
       />
@@ -1261,7 +1261,7 @@ export function RunApp({
       {/* Quit Confirmation Dialog */}
       <ConfirmationDialog
         visible={showQuitDialog}
-        title="Quit Ralph?"
+        title="Quit Loopwright?"
         message="Session will be saved and can be resumed later."
         hint="[y] Yes  [n/Esc] Cancel"
       />

@@ -20,7 +20,7 @@ import type {
 const USER_PLUGINS_DIR = join(
   homedir(),
   '.config',
-  'ralph-tui',
+  'loopwright',
   'plugins',
   'trackers'
 );

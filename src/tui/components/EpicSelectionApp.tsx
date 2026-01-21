@@ -1,7 +1,7 @@
 /**
- * ABOUTME: Epic selection application component for the Ralph TUI.
+ * ABOUTME: Epic selection application component for the Loopwright TUI.
  * Provides keyboard navigation and epic selection functionality.
- * Used when ralph-tui is launched without an --epic flag.
+ * Used when loopwright is launched without an --epic flag.
  */
 
 import type { ReactNode } from 'react';

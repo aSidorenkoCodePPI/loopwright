@@ -1,5 +1,5 @@
 /**
- * ABOUTME: TaskDetailView component for the Ralph TUI.
+ * ABOUTME: TaskDetailView component for the Loopwright TUI.
  * Displays full task details including description, acceptance criteria,
  * dependencies, and metadata. Supports scrolling for long content.
  */

@@ -1,6 +1,6 @@
 /**
- * ABOUTME: Commands module for ralph-tui CLI commands.
- * Exports all CLI command handlers for the ralph-tui application.
+ * ABOUTME: Commands module for loopwright CLI commands.
+ * Exports all CLI command handlers for the loopwright application.
  */
 
 export {

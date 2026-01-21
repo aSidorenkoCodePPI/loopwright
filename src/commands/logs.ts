@@ -1,5 +1,5 @@
 /**
- * ABOUTME: Logs command for ralph-tui.
+ * ABOUTME: Logs command for loopwright.
  * List, view, filter, and clean up iteration output logs.
  */
 
@@ -295,7 +295,7 @@ export async function executeLogsCommand(args: string[]): Promise<void> {
     console.log('No iteration logs found.');
     console.log('');
     console.log(`Logs are saved to: ${getIterationsDir(cwd)}`);
-    console.log('Run ralph-tui to generate logs.');
+    console.log('Run loopwright to generate logs.');
     console.log('');
     return;
   }
@@ -339,9 +339,9 @@ export async function executeLogsCommand(args: string[]): Promise<void> {
   console.log(`  Disk usage: ${formatSize(diskUsage)} in ${count} log file(s)`);
   console.log('');
   console.log('  Commands:');
-  console.log('    ralph-tui logs --iteration 5        View iteration 5');
-  console.log('    ralph-tui logs --task US-005        View logs for task');
-  console.log('    ralph-tui logs --clean --keep 10    Clean old logs');
+  console.log('    loopwright logs --iteration 5        View iteration 5');
+  console.log('    loopwright logs --task US-005        View logs for task');
+  console.log('    loopwright logs --clean --keep 10    Clean old logs');
   console.log('');
 }
 
@@ -389,9 +389,9 @@ async function executeCleanLogs(cwd: string, keep: number, dryRun: boolean): Pro
  */
 export function printLogsHelp(): void {
   console.log(`
-ralph-tui logs - View and manage iteration output logs
+loopwright logs - View and manage iteration output logs
 
-Usage: ralph-tui logs [options]
+Usage: loopwright logs [options]
 
 Options:
   --iteration, -i <n>   View a specific iteration by number
@@ -403,20 +403,20 @@ Options:
   --cwd <path>          Working directory (default: current directory)
 
 Description:
-  Lists iteration output logs saved during ralph-tui execution.
-  Logs are stored in .ralph-tui/iterations/ and include:
+  Lists iteration output logs saved during loopwright execution.
+  Logs are stored in .loopwright/iterations/ and include:
   - Timestamp and duration
   - Task ID and title
   - Full agent stdout/stderr
   - Completion status and outcome
 
 Examples:
-  ralph-tui logs                        # List all iteration logs
-  ralph-tui logs --iteration 5          # View iteration 5 in detail
-  ralph-tui logs -i 5                   # Shorthand for above
-  ralph-tui logs --task US-005          # View all iterations for US-005
-  ralph-tui logs -t US-005              # Shorthand for above
-  ralph-tui logs --clean --keep 10      # Delete all but 10 most recent logs
-  ralph-tui logs --clean --dry-run      # Preview cleanup without deleting
+  loopwright logs                        # List all iteration logs
+  loopwright logs --iteration 5          # View iteration 5 in detail
+  loopwright logs -i 5                   # Shorthand for above
+  loopwright logs --task US-005          # View all iterations for US-005
+  loopwright logs -t US-005              # Shorthand for above
+  loopwright logs --clean --keep 10      # Delete all but 10 most recent logs
+  loopwright logs --clean --dry-run      # Preview cleanup without deleting
 `);
 }

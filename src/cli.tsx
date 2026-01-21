@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * ABOUTME: CLI entry point for the Ralph TUI application.
+ * ABOUTME: CLI entry point for the Loopwright application.
  * Handles subcommands (plugins, run, etc.) and defaults to 'run' when no subcommand given.
  */
 
@@ -28,17 +28,17 @@ import { checkAndAutoUpdate } from './auto-update.js';
  */
 function showHelp(): void {
   console.log(`
-Ralph TUI - AI Agent Loop Orchestrator
+Loopwright - AI Agent Loop Orchestrator
 
-Usage: ralph-tui [command] [options]
+Usage: loopwright [command] [options]
 
 Commands:
-  (none)              Start Ralph execution (same as 'run')
+  (none)              Start Loopwright execution (same as 'run')
   create-prd [opts]   Create a new PRD interactively (alias: prime)
   convert [options]   Convert PRD markdown to JSON format
   jira-prd [options]  Fetch Jira issues assigned to you via MCP
   learn [path]        Analyze project for AI agents
-  run [options]       Start Ralph execution
+  run [options]       Start Loopwright execution
   resume [options]    Resume an interrupted session
   status [options]    Check session status (headless, for CI/scripts)
   logs [options]      View/manage iteration output logs
@@ -82,7 +82,7 @@ Convert Options:
   --force, -f         Overwrite existing files
 
 Learn Options:
-  --output, -o <path> Custom output file path (default: ./ralph-context.md)
+  --output, -o <path> Custom output file path (default: ./loopwright-context.md)
   --depth <level>     Analysis depth: shallow, standard (default), or deep
   --agent             Use master agent (copilot -p) for intelligent folder groupings
   --strategy <type>   Splitting strategy: top-level, domain, balanced, auto (default)
@@ -92,34 +92,34 @@ Learn Options:
   --force, -f         Overwrite existing file without confirmation
 
 Examples:
-  ralph-tui                              # Start execution (same as 'run')
-  ralph-tui create-prd                   # Create a new PRD interactively
-  ralph-tui create-prd --chat            # Create PRD with AI chat mode
-  ralph-tui convert --to json ./prd.md   # Convert PRD to JSON
-  ralph-tui learn                        # Analyze current directory
-  ralph-tui learn --agent                # Use master agent for folder groupings
-  ralph-tui learn --strategy domain      # Group by code dependencies
-  ralph-tui learn --dry-run              # Preview split plan
-  ralph-tui learn ./my-project           # Analyze specific directory
-  ralph-tui learn --depth shallow        # Quick structural scan
-  ralph-tui learn --depth deep           # Full code pattern analysis
-  ralph-tui learn --output ./docs/ctx.md # Custom output location
-  ralph-tui run                          # Start execution with defaults
-  ralph-tui run --epic myproject-epic    # Run with specific epic
-  ralph-tui run --prd ./prd.json         # Run with PRD file
-  ralph-tui resume                       # Resume interrupted session
-  ralph-tui status                       # Check session status
-  ralph-tui status --json                # JSON output for CI/scripts
-  ralph-tui logs                         # List iteration logs
-  ralph-tui logs --iteration 5           # View specific iteration
-  ralph-tui logs --task US-005           # View logs for a task
-  ralph-tui logs --clean --keep 10       # Clean up old logs
-  ralph-tui plugins agents               # List agent plugins
-  ralph-tui plugins trackers             # List tracker plugins
-  ralph-tui template show                # Show current prompt template
-  ralph-tui template init                # Create custom template
-  ralph-tui docs                         # Open documentation in browser
-  ralph-tui docs quickstart              # Open quick start guide
+  loopwright                              # Start execution (same as 'run')
+  loopwright create-prd                   # Create a new PRD interactively
+  loopwright create-prd --chat            # Create PRD with AI chat mode
+  loopwright convert --to json ./prd.md   # Convert PRD to JSON
+  loopwright learn                        # Analyze current directory
+  loopwright learn --agent                # Use master agent for folder groupings
+  loopwright learn --strategy domain      # Group by code dependencies
+  loopwright learn --dry-run              # Preview split plan
+  loopwright learn ./my-project           # Analyze specific directory
+  loopwright learn --depth shallow        # Quick structural scan
+  loopwright learn --depth deep           # Full code pattern analysis
+  loopwright learn --output ./docs/ctx.md # Custom output location
+  loopwright run                          # Start execution with defaults
+  loopwright run --epic myproject-epic    # Run with specific epic
+  loopwright run --prd ./prd.json         # Run with PRD file
+  loopwright resume                       # Resume interrupted session
+  loopwright status                       # Check session status
+  loopwright status --json                # JSON output for CI/scripts
+  loopwright logs                         # List iteration logs
+  loopwright logs --iteration 5           # View specific iteration
+  loopwright logs --task US-005           # View logs for a task
+  loopwright logs --clean --keep 10       # Clean up old logs
+  loopwright plugins agents               # List agent plugins
+  loopwright plugins trackers             # List tracker plugins
+  loopwright template show                # Show current prompt template
+  loopwright template init                # Create custom template
+  loopwright docs                         # Open documentation in browser
+  loopwright docs quickstart              # Open quick start guide
 `);
 }
 
@@ -134,7 +134,7 @@ async function handleSubcommand(args: string[]): Promise<boolean> {
   if (command === 'version' || command === '--version' || command === '-v') {
     // Dynamic import to get version from package.json
     const pkg = await import('../package.json', { with: { type: 'json' } });
-    console.log(`ralph-tui ${pkg.default.version}`);
+    console.log(`loopwright ${pkg.default.version}`);
     return true;
   }
 
@@ -285,6 +285,6 @@ async function main(): Promise<void> {
 
 // Run the main function
 main().catch((error: unknown) => {
-  console.error('Failed to start Ralph TUI:', error);
+  console.error('Failed to start Loopwright:', error);
   process.exit(1);
 });

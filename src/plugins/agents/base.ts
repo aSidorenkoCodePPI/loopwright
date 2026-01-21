@@ -13,7 +13,7 @@ import { join } from 'node:path';
 function debugLog(msg: string): void {
   if (process.env.RALPH_DEBUG) {
     try {
-      const logPath = join(tmpdir(), 'ralph-agent-debug.log');
+      const logPath = join(tmpdir(), 'loopwright-agent-debug.log');
       appendFileSync(logPath, `${new Date().toISOString()} ${msg}\n`);
     } catch {
       // Ignore write errors

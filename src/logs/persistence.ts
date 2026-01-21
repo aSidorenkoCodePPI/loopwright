@@ -27,7 +27,7 @@ import type {
 import { ITERATIONS_DIR } from './types.js';
 import type { SubagentEvent, SubagentState } from '../plugins/agents/tracing/types.js';
 import type { IterationResult } from '../engine/types.js';
-import type { RalphConfig } from '../config/types.js';
+import type { LoopwrightConfig } from '../config/types.js';
 
 /**
  * Divider between metadata header and raw output in log files.
@@ -83,8 +83,8 @@ export async function ensureIterationsDir(cwd: string, customDir?: string): Prom
  * Options for building iteration metadata.
  */
 export interface BuildMetadataOptions {
-  /** Ralph config (for agent plugin, model, epicId) */
-  config?: Partial<RalphConfig>;
+  /** Loopwright config (for agent plugin, model, epicId) */
+  config?: Partial<LoopwrightConfig>;
 
   /** Agent switches that occurred during this iteration */
   agentSwitches?: AgentSwitchEntry[];
@@ -98,10 +98,10 @@ export interface BuildMetadataOptions {
  */
 export function buildMetadata(
   result: IterationResult,
-  configOrOptions?: Partial<RalphConfig> | BuildMetadataOptions
+  configOrOptions?: Partial<LoopwrightConfig> | BuildMetadataOptions
 ): IterationLogMetadata {
   // Handle both old signature (config only) and new signature (options object)
-  let config: Partial<RalphConfig> | undefined;
+  let config: Partial<LoopwrightConfig> | undefined;
   let agentSwitches: AgentSwitchEntry[] | undefined;
   let completionSummary: string | undefined;
 
@@ -112,7 +112,7 @@ export function buildMetadata(
     completionSummary = configOrOptions.completionSummary;
   } else {
     // Old config-only signature for backward compatibility
-    config = configOrOptions as Partial<RalphConfig> | undefined;
+    config = configOrOptions as Partial<LoopwrightConfig> | undefined;
   }
 
   return {
@@ -277,8 +277,8 @@ function parseMetadataHeader(header: string): IterationLogMetadata | null {
  * Options for saving iteration logs.
  */
 export interface SaveIterationLogOptions {
-  /** Ralph config (for output directory, agent plugin, model, epicId) */
-  config?: Partial<RalphConfig>;
+  /** Loopwright config (for output directory, agent plugin, model, epicId) */
+  config?: Partial<LoopwrightConfig>;
 
   /** Subagent trace data to persist (optional) */
   subagentTrace?: SubagentTrace;
@@ -303,12 +303,12 @@ export async function saveIterationLog(
   result: IterationResult,
   stdout: string,
   stderr: string,
-  options?: SaveIterationLogOptions | Partial<RalphConfig>
+  options?: SaveIterationLogOptions | Partial<LoopwrightConfig>
 ): Promise<string> {
   // Handle both old signature (config only) and new signature (options object)
   // Old signature: saveIterationLog(cwd, result, stdout, stderr, config)
   // New signature: saveIterationLog(cwd, result, stdout, stderr, options)
-  let config: Partial<RalphConfig> | undefined;
+  let config: Partial<LoopwrightConfig> | undefined;
   let subagentTrace: SubagentTrace | undefined;
   let agentSwitches: AgentSwitchEntry[] | undefined;
   let completionSummary: string | undefined;
@@ -322,7 +322,7 @@ export async function saveIterationLog(
     completionSummary = saveOptions.completionSummary;
   } else {
     // Old config-only signature for backward compatibility
-    config = options as Partial<RalphConfig> | undefined;
+    config = options as Partial<LoopwrightConfig> | undefined;
   }
 
   const outputDir = config?.outputDir;

@@ -1,11 +1,11 @@
-# Ralph TUI
+# Loopwright
 
 [![Built with Bun](https://img.shields.io/badge/Built%20with-Bun-f9f1e1.svg)](https://bun.sh)
-[![npm version](https://img.shields.io/npm/v/@asidorenkocodeppi/ralph-tui.svg)](https://www.npmjs.com/package/@asidorenkocodeppi/ralph-tui)
+[![npm version](https://img.shields.io/npm/v/@asidorenkocodeppi/loopwright.svg)](https://www.npmjs.com/package/@asidorenkocodeppi/loopwright)
 
 **AI Agent Loop Orchestrator** - A terminal UI for orchestrating AI coding agents to work through task lists autonomously.
 
-Ralph TUI connects your AI coding assistant (GitHub Copilot CLI, OpenCode) to your task tracker and runs them in an autonomous loop, completing tasks one-by-one with intelligent selection, error handling, and full visibility.
+Loopwright connects your AI coding assistant (GitHub Copilot CLI, OpenCode) to your task tracker and runs them in an autonomous loop, completing tasks one-by-one with intelligent selection, error handling, and full visibility.
 
 ## Installation
 
@@ -32,17 +32,17 @@ After installation, verify Bun is available:
 bun --version
 ```
 
-### Step 2: Install Ralph TUI
+### Step 2: Install Loopwright
 
 ```powershell
 # Install the package
-npm install -g @asidorenkocodeppi/ralph-tui
+npm install -g @asidorenkocodeppi/loopwright
 
 # IMPORTANT: Also install with bun to create the CLI symlink
-bun install -g @asidorenkocodeppi/ralph-tui
+bun install -g @asidorenkocodeppi/loopwright
 ```
 
-> **Note:** The `bun install -g` step is required to create the `ralph-tui` command in your PATH.
+> **Note:** The `bun install -g` step is required to create the `loopwright` command in your PATH.
 
 ### Step 3: Install GitHub Copilot CLI (Default Agent)
 
@@ -57,13 +57,13 @@ gh auth login
 ### Verify Installation
 
 ```powershell
-ralph-tui --help
+loopwright --help
 ```
 
 If you get "command not found", try:
 ```powershell
 # Option 1: Run directly with bunx
-bunx @asidorenkocodeppi/ralph-tui --help
+bunx @asidorenkocodeppi/loopwright --help
 
 # Option 2: Add bun's bin to PATH (add to your shell profile)
 export PATH="$HOME/.bun/bin:$PATH"
@@ -74,29 +74,29 @@ export PATH="$HOME/.bun/bin:$PATH"
 ```powershell
 # Setup your project
 cd your-project
-ralph-tui setup
+loopwright setup
 
 # Create a PRD with AI assistance
-ralph-tui create-prd
+loopwright create-prd
 
 # Or create a PRD from a Jira issue
-ralph-tui create-prd --jira
+loopwright create-prd --jira
 
-# Run Ralph!
-ralph-tui run --prd ./tasks/prd.json
+# Run Loopwright!
+loopwright run --prd ./tasks/prd.json
 ```
 
-That's it! Ralph will work through your tasks autonomously.
+That's it! Loopwright will work through your tasks autonomously.
 
 ## Jira Integration
 
-Ralph TUI integrates with Jira to convert your tickets into actionable PRDs with user stories.
+Loopwright integrates with Jira to convert your tickets into actionable PRDs with user stories.
 
 ### Fetching Jira Issues
 
 ```bash
 # List your assigned Jira issues
-ralph-tui jira-prd
+loopwright jira-prd
 ```
 
 This uses GitHub Copilot CLI's MCP (Model Context Protocol) to fetch issues assigned to you from Jira.
@@ -105,7 +105,7 @@ This uses GitHub Copilot CLI's MCP (Model Context Protocol) to fetch issues assi
 
 ```bash
 # Interactive: select a Jira ticket and generate a PRD
-ralph-tui create-prd --jira
+loopwright create-prd --jira
 ```
 
 **How it works:**
@@ -182,7 +182,7 @@ The Jira integration uses GitHub Copilot CLI's MCP feature. Ensure your Copilot 
 3. Save as `prd.json` - your task list
 
 **Execution Phase:**
-1. Ralph selects the highest-priority incomplete task
+1. Loopwright selects the highest-priority incomplete task
 2. Builds a prompt with task details + context
 3. Executes your AI agent (Copilot CLI)
 4. Detects completion via `<promise>COMPLETE</promise>` token
@@ -202,32 +202,32 @@ Repeat until all tasks are complete.
 
 ## Project Analysis
 
-Ralph can analyze your project structure to help AI agents understand the codebase. The `learn` command scans your project, detects patterns, and generates a context file (`ralph-context.md`) that agents can use for better code understanding.
+Loopwright can analyze your project structure to help AI agents understand the codebase. The `learn` command scans your project, detects patterns, and generates a context file (`loopwright-context.md`) that agents can use for better code understanding.
 
 ### Basic Usage
 
 ```bash
 # Analyze current directory
-ralph-tui learn
+loopwright learn
 
 # Analyze a specific path
-ralph-tui learn ./my-project
+loopwright learn ./my-project
 
 # Custom output file
-ralph-tui learn --output ./docs/context.md
+loopwright learn --output ./docs/context.md
 ```
 
 ### Analysis Depth
 
 ```bash
 # Quick structural scan
-ralph-tui learn --depth shallow
+loopwright learn --depth shallow
 
 # Standard analysis (default)
-ralph-tui learn --depth standard
+loopwright learn --depth standard
 
 # Deep analysis with code patterns
-ralph-tui learn --depth deep
+loopwright learn --depth deep
 ```
 
 ### AI-Powered Analysis
@@ -236,13 +236,13 @@ Use the `--agent` flag to enable intelligent folder grouping via GitHub Copilot:
 
 ```bash
 # Let AI analyze and group related code
-ralph-tui learn --agent
+loopwright learn --agent
 
 # Preview the analysis plan without executing
-ralph-tui learn --agent --dry-run
+loopwright learn --agent --dry-run
 
 # Choose a specific splitting strategy
-ralph-tui learn --agent --strategy domain
+loopwright learn --agent --strategy domain
 ```
 
 **Splitting Strategies:**
@@ -267,47 +267,47 @@ ralph-tui learn --agent --strategy domain
 The following are excluded by default:
 - Build directories: `node_modules/`, `dist/`, `build/`, `.next/`
 - Binary files: images, videos, archives, compiled files
-- Patterns from `.gitignore` and `.ralphignore`
+- Patterns from `.gitignore` and `.loopwrightignore`
 
 Override exclusions with `--include`:
 ```bash
-ralph-tui learn --include "dist/**" --include "*.min.js"
+loopwright learn --include "dist/**" --include "*.min.js"
 ```
 
 ## CLI Commands
 
 | Command | Description |
 |---------|-------------|
-| `ralph-tui` | Launch the interactive TUI |
-| `ralph-tui run [options]` | Start Ralph execution |
-| `ralph-tui resume` | Resume an interrupted session |
-| `ralph-tui status` | Check session status |
-| `ralph-tui logs` | View iteration output logs |
-| `ralph-tui setup` | Run interactive project setup |
-| `ralph-tui learn` | Analyze project for AI agents |
-| `ralph-tui create-prd` | Create a new PRD interactively |
-| `ralph-tui create-prd --jira` | Create PRD from Jira ticket |
-| `ralph-tui jira-prd` | List assigned Jira issues |
-| `ralph-tui config show` | Display merged configuration |
-| `ralph-tui plugins agents` | List available agent plugins |
+| `loopwright` | Launch the interactive TUI |
+| `loopwright run [options]` | Start Loopwright execution |
+| `loopwright resume` | Resume an interrupted session |
+| `loopwright status` | Check session status |
+| `loopwright logs` | View iteration output logs |
+| `loopwright setup` | Run interactive project setup |
+| `loopwright learn` | Analyze project for AI agents |
+| `loopwright create-prd` | Create a new PRD interactively |
+| `loopwright create-prd --jira` | Create PRD from Jira ticket |
+| `loopwright jira-prd` | List assigned Jira issues |
+| `loopwright config show` | Display merged configuration |
+| `loopwright plugins agents` | List available agent plugins |
 
 ### Common Options
 
 ```bash
 # Run with a PRD file (uses Copilot CLI by default)
-ralph-tui run --prd ./prd.json
+loopwright run --prd ./prd.json
 
 # Run headless (no TUI)
-ralph-tui run --prd ./prd.json --headless
+loopwright run --prd ./prd.json --headless
 
 # Override agent
-ralph-tui run --prd ./prd.json --agent opencode
+loopwright run --prd ./prd.json --agent opencode
 
 # Override model (Copilot supports: claude-sonnet-4, gpt-5, etc.)
-ralph-tui run --prd ./prd.json --model claude-sonnet-4
+loopwright run --prd ./prd.json --model claude-sonnet-4
 
 # Limit iterations
-ralph-tui run --iterations 5
+loopwright run --iterations 5
 ```
 
 ### TUI Keyboard Shortcuts
@@ -326,8 +326,8 @@ ralph-tui run --iterations 5
 ### Setup
 
 ```bash
-git clone https://github.com/aSidorenkoCodePPI/ralph-tui.git
-cd ralph-tui
+git clone https://github.com/aSidorenkoCodePPI/loopwright.git
+cd loopwright
 bun install
 ```
 
@@ -343,7 +343,7 @@ bun run dev         # Run from source
 ### Project Structure
 
 ```
-ralph-tui/
+loopwright/
 ├── src/
 │   ├── cli.tsx           # CLI entry point
 │   ├── commands/         # CLI commands
@@ -363,7 +363,6 @@ ralph-tui/
 
 ## Credits
 
-- Original [Ralph Wiggum loop concept](https://ghuntley.com/ralph/) by Geoffrey Huntley
 - Forked from [subsy/ralph-tui](https://github.com/subsy/ralph-tui)
 
 ## License

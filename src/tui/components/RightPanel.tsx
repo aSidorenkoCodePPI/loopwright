@@ -1,5 +1,5 @@
 /**
- * ABOUTME: RightPanel component for the Ralph TUI.
+ * ABOUTME: RightPanel component for the Loopwright TUI.
  * Displays the current iteration details or selected task details.
  * Supports toggling between details view and output view with 'o' key.
  * Includes collapsible subagent sections when subagent tracing is enabled.
@@ -155,21 +155,21 @@ function NoSelection(): ReactNode {
       </box>
       <box style={{ marginBottom: 2 }}>
         <text fg={colors.fg.secondary}>
-          No tasks available. To start working with Ralph:
+          No tasks available. To start working with Loopwright:
         </text>
       </box>
       <box style={{ flexDirection: 'column', gap: 1 }}>
         <text fg={colors.fg.muted}>
           <span fg={colors.accent.primary}>1.</span> Run{' '}
-          <span fg={colors.fg.secondary}>ralph-tui setup</span> to configure your project
+          <span fg={colors.fg.secondary}>loopwright setup</span> to configure your project
         </text>
         <text fg={colors.fg.muted}>
           <span fg={colors.accent.primary}>2.</span> Run{' '}
-          <span fg={colors.fg.secondary}>ralph-tui run</span> to start execution
+          <span fg={colors.fg.secondary}>loopwright run</span> to start execution
         </text>
         <text fg={colors.fg.muted}>
           <span fg={colors.accent.primary}>3.</span> Or run{' '}
-          <span fg={colors.fg.secondary}>ralph-tui --help</span> for more options
+          <span fg={colors.fg.secondary}>loopwright --help</span> for more options
         </text>
       </box>
       <box style={{ marginTop: 2 }}>

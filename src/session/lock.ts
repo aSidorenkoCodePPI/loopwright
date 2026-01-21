@@ -1,5 +1,5 @@
 /**
- * ABOUTME: Single instance lock management for Ralph TUI.
+ * ABOUTME: Single instance lock management for Loopwright.
  * Prevents concurrent runs in the same git repository to avoid state corruption.
  * Provides clear user feedback for lock conflicts and stale lock handling.
  */
@@ -20,8 +20,8 @@ import type { LockFile } from './types.js';
 /**
  * Directory for session data (relative to cwd)
  */
-const SESSION_DIR = '.ralph-tui';
-const LOCK_FILE = 'ralph.lock';
+const SESSION_DIR = '.loopwright';
+const LOCK_FILE = 'loopwright.lock';
 
 /**
  * Result of checking the lock status
@@ -176,12 +176,12 @@ function formatStaleLockWarning(lock: LockFile): string {
   return `
 ⚠️  Stale lock detected
 
-A previous Ralph session did not exit cleanly:
+A previous Loopwright session did not exit cleanly:
   PID:      ${lock.pid} (no longer running)
   Started:  ${startTime}
   Host:     ${lock.hostname}
 
-This may happen if Ralph was terminated unexpectedly (crash, kill -9, etc.).
+This may happen if Loopwright was terminated unexpectedly (crash, kill -9, etc.).
 `;
 }
 
@@ -239,7 +239,7 @@ export async function acquireLockWithPrompt(
     const pid = lockStatus.lock.pid;
     return {
       acquired: false,
-      error: `Ralph already running in this repo (PID: ${pid})`,
+      error: `Loopwright already running in this repo (PID: ${pid})`,
       existingPid: pid,
     };
   }

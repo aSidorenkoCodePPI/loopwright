@@ -1,5 +1,5 @@
 /**
- * ABOUTME: Type definitions for the Ralph execution engine.
+ * ABOUTME: Type definitions for the Loopwright execution engine.
  * Defines events, iteration results, engine state types, and error handling strategies.
  */
 

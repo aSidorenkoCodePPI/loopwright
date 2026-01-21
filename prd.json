@@ -5,9 +5,9 @@
     {
       "id": "US-001",
       "title": "Sample task",
-      "description": "As a developer, I want to test ralph-tui to verify it works correctly",
+"description": "As a developer, I want to test loopwright to verify it works correctly",
       "acceptanceCriteria": [
-        "Ralph-tui launches successfully",
+        "Loopwright launches successfully",
         "Task is displayed in the TUI"
       ],
       "priority": 1,

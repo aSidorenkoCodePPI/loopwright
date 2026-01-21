@@ -1,5 +1,5 @@
 /**
- * ABOUTME: PRD creation module for ralph-tui.
+ * ABOUTME: PRD creation module for loopwright.
  * Exports types, questions, generator, and wizard for PRD creation.
  */
 

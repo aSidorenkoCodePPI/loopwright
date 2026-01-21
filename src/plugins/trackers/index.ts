@@ -1,7 +1,7 @@
 /**
  * ABOUTME: Tracker plugins module for task/issue tracker integrations.
  * Exports plugin interfaces, the plugin registry, and built-in plugins.
- * Trackers are used by Ralph to get tasks, update status, and sync changes.
+ * Trackers are used by Loopwright to get tasks, update status, and sync changes.
  */
 
 // Type definitions

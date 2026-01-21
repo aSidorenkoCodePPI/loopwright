@@ -1,5 +1,5 @@
 /**
- * ABOUTME: Issue selection application component for the Ralph TUI.
+ * ABOUTME: Issue selection application component for the Loopwright TUI.
  * Provides keyboard navigation, filtering, and issue selection functionality.
  * Used for selecting a Jira issue for PRD generation workflow.
  */

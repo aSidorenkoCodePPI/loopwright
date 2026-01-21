@@ -4,7 +4,7 @@
  */
 
 import type { TrackerTask } from '../plugins/trackers/types.js';
-import type { RalphConfig } from '../config/types.js';
+import type { LoopwrightConfig } from '../config/types.js';
 
 /**
  * Variables available for template substitution.
@@ -87,7 +87,7 @@ export interface TemplateContext {
   task: TrackerTask;
 
   /** The raw configuration for advanced template use */
-  config: Partial<RalphConfig>;
+  config: Partial<LoopwrightConfig>;
 
   /** Epic information if available */
   epic?: {
@@ -138,7 +138,7 @@ export interface TemplateRenderResult {
 export type BuiltinTemplateType = 'default' | 'beads' | 'json' | 'beads-bv';
 
 /**
- * Template configuration in ralph config.
+ * Template configuration in loopwright config.
  */
 export interface TemplateConfig {
   /** Path to custom template file (relative to cwd or absolute) */

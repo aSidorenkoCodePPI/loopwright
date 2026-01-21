@@ -1,5 +1,5 @@
 /**
- * ABOUTME: Type definitions for Ralph TUI configuration.
+ * ABOUTME: Type definitions for Loopwright configuration.
  * Defines the structure of configuration files and runtime options.
  */
 
@@ -9,7 +9,7 @@ import type { ErrorHandlingConfig, ErrorHandlingStrategy } from '../engine/types
 
 /**
  * Rate limit handling configuration for agents.
- * Controls how ralph-tui responds when an agent hits API rate limits.
+ * Controls how loopwright responds when an agent hits API rate limits.
  */
 export interface RateLimitHandlingConfig {
   /** Whether rate limit handling is enabled (default: true) */
@@ -48,9 +48,8 @@ export type SubagentDetailLevel = 'off' | 'minimal' | 'moderate' | 'full';
  * Sound mode for notifications.
  * - 'off': No sound (default)
  * - 'system': Use OS default notification sound
- * - 'ralph': Play random Ralph Wiggum sound clips
  */
-export type NotificationSoundMode = 'off' | 'system' | 'ralph';
+export type NotificationSoundMode = 'off' | 'system';
 
 /**
  * Notifications configuration for desktop notifications.
@@ -191,7 +190,7 @@ export interface StoredConfig {
 /**
  * Merged runtime configuration (stored config + CLI options)
  */
-export interface RalphConfig {
+export interface LoopwrightConfig {
   /** Active agent configuration */
   agent: AgentPluginConfig;
 
@@ -265,12 +264,12 @@ export const DEFAULT_ERROR_HANDLING: ErrorHandlingConfig = {
 /**
  * Default configuration values
  */
-export const DEFAULT_CONFIG: Omit<RalphConfig, 'agent' | 'tracker'> = {
+export const DEFAULT_CONFIG: Omit<LoopwrightConfig, 'agent' | 'tracker'> = {
   maxIterations: 10,
   iterationDelay: 1000,
   cwd: process.cwd(),
-  outputDir: '.ralph-tui/iterations',
-  progressFile: '.ralph-tui/progress.md',
+  outputDir: '.loopwright/iterations',
+  progressFile: '.loopwright/progress.md',
   showTui: true,
   errorHandling: DEFAULT_ERROR_HANDLING,
 };

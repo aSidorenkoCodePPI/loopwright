@@ -1,5 +1,5 @@
 /**
- * ABOUTME: Issue selection view component for the Ralph TUI.
+ * ABOUTME: Issue selection view component for the Loopwright TUI.
  * Displays a filterable list of Jira issues for the user to select for PRD generation.
  * Shows issue key, summary, type, priority, and status with interactive selection.
  */

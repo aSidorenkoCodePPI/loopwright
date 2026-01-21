@@ -1,10 +1,10 @@
 {
-  "name": "@asidorenkocodeppi/ralph-tui",
+  "name": "@asidorenkocodeppi/loopwright",
   "version": "0.1.17",
   "publishConfig": {
     "access": "public"
   },
-  "description": "Ralph TUI - AI Agent Loop Orchestrator",
+  "description": "Loopwright - AI Agent Loop Orchestrator",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -14,8 +14,8 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "bin": {
-    "ralph-tui": "dist/cli.js"
+"bin": {
+    "loopwright": "dist/cli.js"
   },
   "scripts": {
     "build": "bun run build:cli && bun run build:lib && bun run build:assets",
@@ -29,17 +29,17 @@
     "clean": "node -e \"const fs=require('fs');fs.rmSync('dist',{recursive:true,force:true})\"",
     "dev": "bun run ./src/cli.tsx",
     "prepublishOnly": "bun run build",
-    "postinstall": "node -e \"const fs=require('fs');if(!fs.existsSync('dist/cli.js')){console.log('Building ralph-tui...');require('child_process').execSync('bun run build',{stdio:'inherit'})}\""
+    "postinstall": "node -e \"const fs=require('fs');if(!fs.existsSync('dist/cli.js')){console.log('Building loopwright...');require('child_process').execSync('bun run build',{stdio:'inherit'})}\""
   },
   "author": "subsy",
   "license": "MIT",
-  "repository": {
+"repository": {
     "type": "git",
-    "url": "git+https://github.com/aSidorenkoCodePPI/ralph-tui.git"
+    "url": "git+https://github.com/aSidorenkoCodePPI/loopwright.git"
   },
-  "homepage": "https://github.com/aSidorenkoCodePPI/ralph-tui",
+  "homepage": "https://github.com/aSidorenkoCodePPI/loopwright",
   "bugs": {
-    "url": "https://github.com/aSidorenkoCodePPI/ralph-tui/issues"
+    "url": "https://github.com/aSidorenkoCodePPI/loopwright/issues"
   },
   "packageManager": "bun@1.2.17",
   "engines": {

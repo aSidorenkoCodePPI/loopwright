@@ -7,7 +7,7 @@
  * Default prompt for JSON/PRD tracker (prompt.md).
  * Provides agent instructions for PRD-based workflows.
  */
-export const PROMPT_JSON = `# Ralph Agent Instructions
+export const PROMPT_JSON = `# Loopwright Agent Instructions
 
 You are an autonomous coding agent working on a software project.
 
@@ -121,7 +121,7 @@ If there are still stories with \`passes: false\`, end your response normally (a
  * Default prompt for Beads tracker (prompt-beads.md).
  * Provides agent instructions for bead-based workflows.
  */
-export const PROMPT_BEADS = `# Ralph Agent - Beads Edition
+export const PROMPT_BEADS = `# Loopwright Agent - Beads Edition
 
 You are an autonomous coding agent implementing tasks from Beads.
 
@@ -193,7 +193,7 @@ bd show [bead-id]
 bd update [bead-id] --status=closed --close_reason="..."
 
 # List beads
-bd list --labels="ralph"           # All ralph beads
+bd list --labels="loopwright"           # All loopwright beads
 bd list --parent=[epic-id]         # Children of an epic
 bd list --status=open              # Open beads only
 

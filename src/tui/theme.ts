@@ -1,10 +1,10 @@
 /**
- * ABOUTME: Theme constants and types for the Ralph TUI application.
+ * ABOUTME: Theme constants and types for the Loopwright TUI application.
  * Provides consistent styling across all TUI components with a modern dark theme.
  */
 
 /**
- * Color palette for the Ralph TUI
+ * Color palette for the Loopwright TUI
  */
 export const colors = {
   // Background colors
@@ -60,7 +60,7 @@ export const colors = {
 /**
  * Status indicator symbols
  * Task status: ✓ (done), ▶ (active/actionable), ○ (pending), ⊘ (blocked), ✓ (closed - greyed)
- * Ralph status: ▶ (running), ◎ (pausing), ⏸ (paused), ■ (stopped), ✓ (complete), ○ (idle/ready)
+ * Loopwright status: ▶ (running), ◎ (pausing), ⏸ (paused), ■ (stopped), ✓ (complete), ○ (idle/ready)
  * Worker status: ○ (queued), ▶ (running), ✓ (complete), ✗ (error), ↻ (retrying)
  */
 export const statusIndicators = {
@@ -112,7 +112,7 @@ export const keyboardShortcuts = [
  */
 export const fullKeyboardShortcuts = [
   { key: '?', description: 'Show/hide this help', category: 'General' },
-  { key: 'q', description: 'Quit Ralph', category: 'General' },
+  { key: 'q', description: 'Quit Loopwright', category: 'General' },
   { key: 'Esc', description: 'Go back / Cancel', category: 'General' },
   { key: ',', description: 'Open settings', category: 'General' },
   { key: 's', description: 'Start execution (when ready)', category: 'Execution' },
@@ -164,7 +164,7 @@ export const layout = {
 } as const;
 
 /**
- * Ralph status types
+ * Loopwright status types
  * - 'ready': Waiting for user to start execution (interactive mode)
  * - 'running': Actively executing iterations (generic running state)
  * - 'selecting': Selecting next task to work on
@@ -176,7 +176,7 @@ export const layout = {
  * - 'idle': Stopped, no more tasks available
  * - 'error': Stopped due to error
  */
-export type RalphStatus = 'ready' | 'running' | 'selecting' | 'executing' | 'pausing' | 'paused' | 'stopped' | 'complete' | 'idle' | 'error';
+export type LoopwrightStatus = 'ready' | 'running' | 'selecting' | 'executing' | 'pausing' | 'paused' | 'stopped' | 'complete' | 'idle' | 'error';
 
 /**
  * Task status types matching the acceptance criteria

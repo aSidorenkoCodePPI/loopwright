@@ -1,7 +1,7 @@
 /**
- * ABOUTME: Skill installation utility for ralph-tui.
+ * ABOUTME: Skill installation utility for loopwright.
  * Provides functions to install skills to the user's ~/.claude/skills/ directory.
- * Skills are bundled with ralph-tui and can be installed during setup.
+ * Skills are bundled with loopwright and can be installed during setup.
  */
 
 import { readFile, writeFile, mkdir, access, constants, readdir } from 'node:fs/promises';
@@ -36,7 +36,7 @@ export interface SkillInfo {
   /** Skill description */
   description: string;
 
-  /** Path to the skill in the ralph-tui package */
+  /** Path to the skill in the loopwright package */
   sourcePath: string;
 }
 
@@ -48,7 +48,7 @@ export function getClaudeSkillsDir(): string {
 }
 
 /**
- * Get the path to the bundled skills in the ralph-tui package.
+ * Get the path to the bundled skills in the loopwright package.
  */
 export function getBundledSkillsDir(): string {
   // In ESM, we need to derive the path from import.meta.url
@@ -169,14 +169,14 @@ export async function installSkill(
 }
 
 /**
- * Install the ralph-tui-prd skill specifically.
+ * Install the loopwright-prd skill specifically.
  */
-export async function installRalphTuiPrdSkill(
+export async function installLoopwrightPrdSkill(
   options: {
     force?: boolean;
   } = {}
 ): Promise<SkillInstallResult> {
-  return installSkill('ralph-tui-prd', options);
+  return installSkill('loopwright-prd', options);
 }
 
 /**

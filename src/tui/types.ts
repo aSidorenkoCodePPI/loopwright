@@ -1,9 +1,9 @@
 /**
- * ABOUTME: Type definitions for Ralph TUI components.
+ * ABOUTME: Type definitions for Loopwright TUI components.
  * Defines the data structures and props used across the TUI layout components.
  */
 
-import type { TaskStatus, RalphStatus } from './theme.js';
+import type { TaskStatus, LoopwrightStatus } from './theme.js';
 import type { IterationResult, SubagentTreeNode, ActiveAgentState, RateLimitState } from '../engine/types.js';
 import type { TaskPriority } from '../plugins/trackers/types.js';
 import type { SubagentDetailLevel } from '../config/types.js';
@@ -74,8 +74,8 @@ export interface TaskItem {
  * Also displays selected agent and tracker plugin names for configuration visibility.
  */
 export interface HeaderProps {
-  /** Current Ralph execution status */
-  status: RalphStatus;
+  /** Current Loopwright execution status */
+  status: LoopwrightStatus;
   /** Elapsed time in seconds */
   elapsedTime: number;
   /** Current task ID being worked on (if any) */

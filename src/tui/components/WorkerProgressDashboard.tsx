@@ -1,5 +1,5 @@
 /**
- * ABOUTME: Worker Progress Dashboard component for the Ralph TUI.
+ * ABOUTME: Worker Progress Dashboard component for the Loopwright TUI.
  * Displays real-time worker progress during parallel execution with status icons,
  * progress bars, elapsed time, and streaming output with worker prefixes.
  */

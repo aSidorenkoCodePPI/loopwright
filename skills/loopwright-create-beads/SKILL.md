@@ -1,13 +1,13 @@
 ---
-name: ralph-tui-create-beads
-description: "Convert PRDs to beads for ralph-tui execution. Creates an epic with child beads for each user story. Use when you have a PRD and want to use ralph-tui with beads as the task source. Triggers on: create beads, convert prd to beads, beads for ralph, ralph beads."
+name: loopwright-create-beads
+description: "Convert PRDs to beads for loopwright execution. Creates an epic with child beads for each user story. Use when you have a PRD and want to use loopwright with beads as the task source. Triggers on: create beads, convert prd to beads, beads for loopwright, loopwright beads."
 ---
 
-# Ralph TUI - Create Beads
+# Loopwright - Create Beads
 
-Converts PRDs to beads (epic + child tasks) for ralph-tui autonomous execution.
+Converts PRDs to beads (epic + child tasks) for loopwright autonomous execution.
 
-> **Note:** This skill is bundled with ralph-tui's Beads tracker plugin. Future tracker plugins (Linear, GitHub Issues, etc.) will bundle their own task creation skills.
+> **Note:** This skill is bundled with loopwright's Beads tracker plugin. Future tracker plugins (Linear, GitHub Issues, etc.) will bundle their own task creation skills.
 
 ---
 
@@ -18,7 +18,7 @@ Take a PRD (markdown file or text) and create beads in `.beads/beads.jsonl`:
 2. Create an **epic** bead for the feature
 3. Create **child beads** for each user story (with quality gates appended)
 4. Set up **dependencies** between beads (schema → backend → UI)
-5. Output ready for `ralph-tui run --tracker beads`
+5. Output ready for `loopwright run --tracker beads`
 
 ---
 
@@ -54,7 +54,7 @@ Beads use `bd create` command:
 bd create --type=epic \
   --title="[Feature Name]" \
   --description="[Feature description from PRD]" \
-  --labels="ralph,feature"
+  --labels="loopwright,feature"
 
 # Create child bead (with quality gates in acceptance criteria)
 bd create \
@@ -62,16 +62,16 @@ bd create \
   --title="[Story Title]" \
   --description="[Story description with acceptance criteria INCLUDING quality gates]" \
   --priority=[1-4] \
-  --labels="ralph,task"
+  --labels="loopwright,task"
 ```
 
 ---
 
 ## Story Size: The #1 Rule
 
-**Each story must be completable in ONE ralph-tui iteration (~one agent context window).**
+**Each story must be completable in ONE loopwright iteration (~one agent context window).**
 
-ralph-tui spawns a fresh agent instance per iteration with no memory of previous work. If a story is too big, the agent runs out of context before finishing.
+loopwright spawns a fresh agent instance per iteration with no memory of previous work. If a story is too big, the agent runs out of context before finishing.
 
 ### Right-sized stories:
 - Add a database column + migration
@@ -115,13 +115,13 @@ bd create --parent=epic-123 --title="US-002: Create API" ...
 bd create --parent=epic-123 --title="US-003: Build UI" ...
 
 # Then add dependencies (issue depends-on blocker)
-bd dep add ralph-tui-002 ralph-tui-001  # US-002 depends on US-001
-bd dep add ralph-tui-003 ralph-tui-002  # US-003 depends on US-002
+bd dep add loopwright-002 loopwright-001  # US-002 depends on US-001
+bd dep add loopwright-003 loopwright-002  # US-003 depends on US-002
 ```
 
 **Syntax:** `bd dep add <issue> <depends-on>` — the issue depends on (is blocked by) depends-on.
 
-ralph-tui will:
+loopwright will:
 - Show blocked beads as "blocked" until dependencies complete
 - Never select a bead for execution while its dependencies are open
 - Include dependency context in the prompt when working on a bead
@@ -160,7 +160,7 @@ Each bead's description should include acceptance criteria with:
 3. **First story**: No dependencies (creates foundation)
 4. **Subsequent stories**: Depend on their predecessors (UI depends on backend, etc.)
 5. **Priority**: Based on dependency order, then document order (0=critical, 2=medium, 4=backlog)
-6. **Labels**: Epic gets `ralph,feature`; Tasks get `ralph,task`
+6. **Labels**: Epic gets `loopwright,feature`; Tasks get `loopwright,task`
 7. **All stories**: `status: "open"`
 8. **Acceptance criteria**: Story criteria + quality gates appended
 9. **UI stories**: Also append UI-specific gates (browser verification)
@@ -236,10 +236,10 @@ For UI stories, also include:
 bd create --type=epic \
   --title="Friends Outreach Track" \
   --description="Warm outreach for deck feedback" \
-  --labels="ralph,feature"
+  --labels="loopwright,feature"
 
 # US-001: No deps (first - creates schema)
-bd create --parent=ralph-tui-abc \
+bd create --parent=loopwright-abc \
   --title="US-001: Add investorType field to investor table" \
   --description="As a developer, I need to categorize investors as 'cold' or 'friend'.
 
@@ -249,10 +249,10 @@ bd create --parent=ralph-tui-abc \
 - [ ] pnpm typecheck passes
 - [ ] pnpm lint passes" \
   --priority=1 \
-  --labels="ralph,task"
+  --labels="loopwright,task"
 
 # US-002: UI story (gets browser verification too)
-bd create --parent=ralph-tui-abc \
+bd create --parent=loopwright-abc \
   --title="US-002: Add type toggle to investor list rows" \
   --description="As Ryan, I want to toggle investor type directly from the list.
 
@@ -264,13 +264,13 @@ bd create --parent=ralph-tui-abc \
 - [ ] pnpm lint passes
 - [ ] Verify in browser using dev-browser skill" \
   --priority=2 \
-  --labels="ralph,task"
+  --labels="loopwright,task"
 
 # Add dependency: US-002 depends on US-001
-bd dep add ralph-tui-002 ralph-tui-001
+bd dep add loopwright-002 loopwright-001
 
 # US-003: UI story
-bd create --parent=ralph-tui-abc \
+bd create --parent=loopwright-abc \
   --title="US-003: Filter investors by type" \
   --description="As Ryan, I want to filter the list to see just friends or cold.
 
@@ -281,10 +281,10 @@ bd create --parent=ralph-tui-abc \
 - [ ] pnpm lint passes
 - [ ] Verify in browser using dev-browser skill" \
   --priority=3 \
-  --labels="ralph,task"
+  --labels="loopwright,task"
 
 # Add dependency: US-003 depends on US-002
-bd dep add ralph-tui-003 ralph-tui-002
+bd dep add loopwright-003 loopwright-002
 ```
 
 ---
@@ -293,16 +293,16 @@ bd dep add ralph-tui-003 ralph-tui-002
 
 Beads are written to: `.beads/beads.jsonl`
 
-After creation, run ralph-tui:
+After creation, run loopwright:
 ```bash
 # Work on a specific epic
-ralph-tui run --tracker beads --epic ralph-tui-abc
+loopwright run --tracker beads --epic loopwright-abc
 
 # Or let it pick the best task automatically
-ralph-tui run --tracker beads
+loopwright run --tracker beads
 ```
 
-ralph-tui will:
+loopwright will:
 1. Work on beads within the specified epic (or select the best available task)
 2. Close each bead when complete
 3. Close the epic when all children are done

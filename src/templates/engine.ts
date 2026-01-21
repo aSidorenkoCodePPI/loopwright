@@ -8,7 +8,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { homedir } from 'node:os';
 import type { TrackerTask } from '../plugins/trackers/types.js';
-import type { RalphConfig } from '../config/types.js';
+import type { LoopwrightConfig } from '../config/types.js';
 import type {
   TemplateVariables,
   TemplateContext,
@@ -67,11 +67,11 @@ export function getTemplateTypeFromPlugin(pluginName: string): BuiltinTemplateTy
 }
 
 /**
- * Get the user config directory path for ralph-tui.
- * @returns Path to ~/.config/ralph-tui/
+ * Get the user config directory path for loopwright.
+ * @returns Path to ~/.config/loopwright/
  */
 export function getUserConfigDir(): string {
-  return path.join(homedir(), '.config', 'ralph-tui');
+  return path.join(homedir(), '.config', 'loopwright');
 }
 
 /**
@@ -104,7 +104,7 @@ export function getUserPromptPath(trackerType: BuiltinTemplateType): string {
  *
  * Resolution order:
  * 1. customPath (explicit --prompt argument or config file prompt_template)
- * 2. ~/.config/ralph-tui/{mode-specific}.md (user config directory)
+ * 2. ~/.config/loopwright/{mode-specific}.md (user config directory)
  * 3. Built-in template (bundled default)
  *
  * @param customPath Optional path to custom template
@@ -222,13 +222,13 @@ function getAcceptanceCriteria(task: TrackerTask): string {
 /**
  * Build template variables from task and config.
  * @param task The current task
- * @param config The ralph configuration
+ * @param config The loopwright configuration
  * @param epic Optional epic information
  * @returns The flattened template variables
  */
 export function buildTemplateVariables(
   task: TrackerTask,
-  config: Partial<RalphConfig>,
+  config: Partial<LoopwrightConfig>,
   epic?: { id: string; title: string; description?: string },
   recentProgress?: string
 ): TemplateVariables {
@@ -260,14 +260,14 @@ export function buildTemplateVariables(
 /**
  * Build full template context for rendering.
  * @param task The current task
- * @param config The ralph configuration
+ * @param config The loopwright configuration
  * @param epic Optional epic information
  * @param recentProgress Optional recent progress summary
  * @returns The template context
  */
 export function buildTemplateContext(
   task: TrackerTask,
-  config: Partial<RalphConfig>,
+  config: Partial<LoopwrightConfig>,
   epic?: { id: string; title: string; description?: string },
   recentProgress?: string
 ): TemplateContext {
@@ -307,14 +307,14 @@ function compileTemplate(
 /**
  * Render a prompt from a template and task context.
  * @param task The current task
- * @param config The ralph configuration
+ * @param config The loopwright configuration
  * @param epic Optional epic information
  * @param recentProgress Optional recent progress summary from previous iterations
  * @returns The render result with the prompt or error
  */
 export function renderPrompt(
   task: TrackerTask,
-  config: RalphConfig,
+  config: LoopwrightConfig,
   epic?: { id: string; title: string; description?: string },
   recentProgress?: string
 ): TemplateRenderResult {
@@ -372,10 +372,10 @@ export function clearTemplateCache(): void {
 /**
  * Get the path where a custom template should be written for initialization.
  * @param cwd The working directory
- * @param filename Optional custom filename (default: 'ralph-prompt.hbs')
+ * @param filename Optional custom filename (default: 'loopwright-prompt.hbs')
  * @returns The full path for the custom template
  */
-export function getCustomTemplatePath(cwd: string, filename = 'ralph-prompt.hbs'): string {
+export function getCustomTemplatePath(cwd: string, filename = 'loopwright-prompt.hbs'): string {
   return path.join(cwd, filename);
 }
 
@@ -429,7 +429,7 @@ export function getBundledPrompt(trackerType: BuiltinTemplateType): string {
 
 /**
  * Initialize user config directory with default prompt files.
- * Creates ~/.config/ralph-tui/ and copies prompt.md and prompt-beads.md.
+ * Creates ~/.config/loopwright/ and copies prompt.md and prompt-beads.md.
  * @param force Overwrite existing files
  * @returns Results for each file
  */

@@ -144,7 +144,7 @@ export async function runPrdWizard(
     // Print welcome banner
     console.log();
     console.log('╔════════════════════════════════════════════════════════════╗');
-    console.log('║                  Ralph TUI - PRD Creator                   ║');
+    console.log('║                  Loopwright - PRD Creator                   ║');
     console.log('╚════════════════════════════════════════════════════════════╝');
     console.log();
     printInfo('This wizard will help you create a Product Requirements Document.');

@@ -1,5 +1,5 @@
 /**
- * ABOUTME: Run command implementation for ralph-tui.
+ * ABOUTME: Run command implementation for loopwright.
  * Handles CLI argument parsing, configuration loading, session management,
  * and starting the execution engine with TUI.
  * Implements graceful interruption with Ctrl+C confirmation dialog.
@@ -47,7 +47,7 @@ import { RunApp } from '../tui/components/RunApp.js';
 import { EpicSelectionApp } from '../tui/components/EpicSelectionApp.js';
 import type { TrackerPlugin, TrackerTask } from '../plugins/trackers/types.js';
 import { BeadsTrackerPlugin } from '../plugins/trackers/builtin/beads.js';
-import type { RalphConfig } from '../config/types.js';
+import type { LoopwrightConfig } from '../config/types.js';
 import { projectConfigExists, runSetupWizard } from '../setup/index.js';
 import { createInterruptHandler } from '../interruption/index.js';
 import type { InterruptHandler } from '../interruption/types.js';
@@ -203,9 +203,9 @@ export function parseRunArgs(args: string[]): ExtendedRuntimeOptions {
  */
 export function printRunHelp(): void {
   console.log(`
-ralph-tui run - Start Ralph execution
+loopwright run - Start Loopwright execution
 
-Usage: ralph-tui run [options]
+Usage: loopwright run [options]
 
 Options:
   --epic <id>         Epic ID for beads tracker (if omitted, shows epic selection)
@@ -215,8 +215,8 @@ Options:
   --tracker <name>    Override tracker plugin (e.g., beads, beads-bv, json)
   --prompt <path>     Custom prompt file (default: based on tracker mode)
   --context, -c <path> Context file to load for AI prompts (can be specified multiple times)
-  --output-dir <path> Directory for iteration logs (default: .ralph-tui/iterations)
-  --progress-file <path> Progress file for cross-iteration context (default: .ralph-tui/progress.md)
+  --output-dir <path> Directory for iteration logs (default: .loopwright/iterations)
+  --progress-file <path> Progress file for cross-iteration context (default: .loopwright/progress.md)
   --iterations <n>    Maximum iterations (0 = unlimited)
   --delay <ms>        Delay between iterations in milliseconds
   --cwd <path>        Working directory
@@ -230,10 +230,10 @@ Options:
 
 Context Files:
   Context files provide project-specific information to the AI agent.
-  Use 'ralph-tui learn' to generate a ralph-context.md file automatically.
+  Use 'loopwright learn' to generate a loopwright-context.md file automatically.
   
   Multiple context files can be specified:
-    ralph-tui run --context ./ralph-context.md --context ./docs/architecture.md
+    loopwright run --context ./loopwright-context.md --context ./docs/architecture.md
   
   Supported formats: .md, .markdown, .txt
   Maximum file size: 100KB per file
@@ -246,21 +246,21 @@ Log Output Format (--no-tui mode):
   Components: progress, agent, engine, tracker, session, system
 
   Example output:
-    [10:42:15] [INFO] [engine] Ralph started. Total tasks: 5
+    [10:42:15] [INFO] [engine] Loopwright started. Total tasks: 5
     [10:42:15] [INFO] [progress] Iteration 1/10: Working on US-001 - Add login
     [10:42:15] [INFO] [agent] Building prompt for task...
     [10:42:30] [INFO] [progress] Iteration 1 finished. Task US-001: COMPLETED. Duration: 15s
 
 Examples:
-  ralph-tui run                              # Start with defaults
-  ralph-tui run --epic ralph-tui-45r         # Run with specific epic
-  ralph-tui run --prd ./prd.json             # Run with PRD file
-  ralph-tui run --context ./ralph-context.md # Run with project context
-  ralph-tui run --agent copilot --model gpt-4o  # Override agent settings
-  ralph-tui run --tracker beads-bv           # Use beads-bv tracker
-  ralph-tui run --iterations 20              # Limit to 20 iterations
-  ralph-tui run --resume                     # Resume previous session
-  ralph-tui run --no-tui                     # Run headless for CI/scripts
+  loopwright run                              # Start with defaults
+  loopwright run --epic loopwright-45r         # Run with specific epic
+  loopwright run --prd ./prd.json             # Run with PRD file
+  loopwright run --context ./loopwright-context.md # Run with project context
+  loopwright run --agent copilot --model gpt-4o  # Override agent settings
+  loopwright run --tracker beads-bv           # Use beads-bv tracker
+  loopwright run --iterations 20              # Limit to 20 iterations
+  loopwright run --resume                     # Resume previous session
+  loopwright run --no-tui                     # Run headless for CI/scripts
 `);
 }
 
@@ -364,7 +364,7 @@ async function detectAndHandleStaleTasks(
   console.log('');
   console.log('⚠️  Stale in_progress tasks detected');
   console.log('');
-  console.log('A previous Ralph session did not exit cleanly.');
+  console.log('A previous Loopwright session did not exit cleanly.');
   console.log(`Found ${activeTaskIds.length} task(s) stuck in "in_progress" status:`);
   console.log('');
   for (const task of taskDetails) {
@@ -482,11 +482,11 @@ async function promptResumeOrNew(cwd: string): Promise<'resume' | 'new' | 'abort
   if (resumable) {
     console.log('This session can be resumed.');
     console.log('');
-    console.log('  To resume:  ralph-tui resume');
-    console.log('  To start fresh: ralph-tui run --force');
+    console.log('  To resume:  loopwright resume');
+    console.log('  To start fresh: loopwright run --force');
     console.log('');
     console.log('Starting fresh session...');
-    console.log('(Use --resume flag or "ralph-tui resume" command to continue)');
+    console.log('(Use --resume flag or "loopwright resume" command to continue)');
     return 'new';
   } else {
     console.log('This session has completed and cannot be resumed.');
@@ -741,7 +741,7 @@ interface NotificationRunOptions {
 async function runWithTui(
   engine: ExecutionEngine,
   persistedState: PersistedSessionState,
-  config: RalphConfig,
+  config: LoopwrightConfig,
   initialTasks: TrackerTask[],
   storedConfig?: StoredConfig,
   notificationOptions?: NotificationRunOptions
@@ -980,7 +980,7 @@ async function runWithTui(
 async function runHeadless(
   engine: ExecutionEngine,
   persistedState: PersistedSessionState,
-  config: RalphConfig,
+  config: LoopwrightConfig,
   notificationOptions?: NotificationRunOptions
 ): Promise<PersistedSessionState> {
   let currentState = persistedState;
@@ -1246,7 +1246,7 @@ export async function executeRunCommand(args: string[]): Promise<void> {
   if (!configExists && !options.noSetup) {
     // No config found - offer to run setup
     console.log('');
-    console.log('No .ralph-tui/config.toml configuration found in this project.');
+    console.log('No .loopwright/config.toml configuration found in this project.');
     console.log('');
 
     // Run the setup wizard
@@ -1254,8 +1254,8 @@ export async function executeRunCommand(args: string[]): Promise<void> {
 
     if (!result.success) {
       if (result.cancelled) {
-        console.log('Run "ralph-tui setup" to configure later,');
-        console.log('or use "ralph-tui run --no-setup" to skip setup.');
+        console.log('Run "loopwright setup" to configure later,');
+        console.log('or use "loopwright run --no-setup" to skip setup.');
         return;
       }
       console.error('Setup failed:', result.error);
@@ -1264,13 +1264,13 @@ export async function executeRunCommand(args: string[]): Promise<void> {
 
     // Setup completed, continue with run
     console.log('');
-    console.log('Setup complete! Starting Ralph...');
+    console.log('Setup complete! Starting Loopwright...');
     console.log('');
   } else if (!configExists && options.noSetup) {
-    console.log('No .ralph-tui/config.toml found. Using default configuration.');
+    console.log('No .loopwright/config.toml found. Using default configuration.');
   }
 
-  console.log('Initializing Ralph TUI...');
+  console.log('Initializing Loopwright...');
 
   // Initialize plugins
   await initializePlugins();
@@ -1513,14 +1513,14 @@ export async function executeRunCommand(args: string[]): Promise<void> {
   } else {
     // Save current state (session remains resumable)
     await savePersistedSession(persistedState);
-    console.log('\nSession state saved. Use "ralph-tui resume" to continue.');
+    console.log('\nSession state saved. Use "loopwright resume" to continue.');
   }
 
   // End session and clean up lock
   await endSession(config.cwd, allComplete ? 'completed' : 'interrupted');
   await releaseLockNew(config.cwd);
   cleanupLockHandlers();
-  console.log('\nRalph TUI finished.');
+  console.log('\nLoopwright finished.');
 
   // Explicitly exit - event listeners may keep process alive otherwise
   process.exit(0);

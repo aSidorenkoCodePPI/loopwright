@@ -1,6 +1,6 @@
 /**
  * ABOUTME: Template commands for viewing and initializing prompt templates.
- * Provides ralph-tui template show and ralph-tui template init commands.
+ * Provides loopwright template show and loopwright template init commands.
  */
 
 import * as fs from 'node:fs';
@@ -84,12 +84,12 @@ export function printTemplateHelp(): void {
  */
 function showTemplateHelp(): void {
   console.log(`
-${BOLD}ralph-tui template${RESET} - Manage prompt templates
+${BOLD}loopwright template${RESET} - Manage prompt templates
 
 ${BOLD}Commands:${RESET}
   ${CYAN}show${RESET}              Display the current template being used
   ${CYAN}init${RESET}              Copy default template for customization
-  ${CYAN}init-prompts${RESET}      Initialize user prompt files in ~/.config/ralph-tui/
+  ${CYAN}init-prompts${RESET}      Initialize user prompt files in ~/.config/loopwright/
 
 ${BOLD}Show Options:${RESET}
   ${DIM}--tracker <name>${RESET}   Show template for specific tracker (default, beads, beads-bv, json)
@@ -97,23 +97,23 @@ ${BOLD}Show Options:${RESET}
 
 ${BOLD}Init Options:${RESET}
   ${DIM}--tracker <name>${RESET}   Use template for specific tracker (default, beads, beads-bv, json)
-  ${DIM}--output <path>${RESET}    Custom output path (default: ./ralph-prompt.hbs)
+  ${DIM}--output <path>${RESET}    Custom output path (default: ./loopwright-prompt.hbs)
   ${DIM}--force${RESET}            Overwrite existing file
 
 ${BOLD}Init-Prompts Options:${RESET}
   ${DIM}--force${RESET}            Overwrite existing prompt files
 
 ${BOLD}Examples:${RESET}
-  ralph-tui template show                    # Show current template
-  ralph-tui template show --tracker beads    # Show built-in beads template
-  ralph-tui template init                    # Copy default template for customization
-  ralph-tui template init --tracker beads    # Copy beads template
-  ralph-tui template init-prompts            # Initialize ~/.config/ralph-tui/ with prompts
+  loopwright template show                    # Show current template
+  loopwright template show --tracker beads    # Show built-in beads template
+  loopwright template init                    # Copy default template for customization
+  loopwright template init --tracker beads    # Copy beads template
+  loopwright template init-prompts            # Initialize ~/.config/loopwright/ with prompts
 
 ${BOLD}Prompt Files:${RESET}
-  The --prompt option in 'ralph-tui run' searches for prompts in this order:
+  The --prompt option in 'loopwright run' searches for prompts in this order:
   1. Explicit --prompt <path> argument
-  2. ~/.config/ralph-tui/prompt.md or prompt-beads.md (based on tracker mode)
+  2. ~/.config/loopwright/prompt.md or prompt-beads.md (based on tracker mode)
   3. Built-in template (fallback)
 
 ${BOLD}Template Variables:${RESET}
@@ -232,14 +232,14 @@ async function handleInitTemplate(args: string[]): Promise<void> {
   console.log(`${DIM}Template type: ${trackerType}${RESET}`);
   console.log(`\n${BOLD}Next steps:${RESET}`);
   console.log(`  1. Edit ${path.basename(outputPath)} to customize the prompt`);
-  console.log(`  2. Add to your ${CYAN}.ralph-tui/config.toml${RESET}:`);
+  console.log(`  2. Add to your ${CYAN}.loopwright/config.toml${RESET}:`);
   console.log(`     ${DIM}prompt_template: ${path.relative(cwd, outputPath)}${RESET}`);
-  console.log(`\n${DIM}See 'ralph-tui template show' for available variables${RESET}`);
+  console.log(`\n${DIM}See 'loopwright template show' for available variables${RESET}`);
 }
 
 /**
  * Handle the 'template init-prompts' command.
- * Initializes user prompt files in ~/.config/ralph-tui/.
+ * Initializes user prompt files in ~/.config/loopwright/.
  */
 function handleInitPrompts(args: string[]): void {
   const force = args.includes('--force');
@@ -266,7 +266,7 @@ function handleInitPrompts(args: string[]): void {
     console.log(`  • ${CYAN}prompt.md${RESET} - for json tracker (PRD-based workflows)`);
     console.log(`  • ${CYAN}prompt-beads.md${RESET} - for beads/beads-bv trackers`);
     console.log(`\n${DIM}Edit these files to customize agent behavior.${RESET}`);
-    console.log(`${DIM}Use --prompt <path> in 'ralph-tui run' for one-off custom prompts.${RESET}`);
+    console.log(`${DIM}Use --prompt <path> in 'loopwright run' for one-off custom prompts.${RESET}`);
   } else {
     console.log(`\n${RED}Some files could not be created.${RESET}`);
     process.exit(1);

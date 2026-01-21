@@ -1,5 +1,5 @@
 /**
- * ABOUTME: Status command for ralph-tui (headless).
+ * ABOUTME: Status command for loopwright (headless).
  * Displays information about any existing session for CI/scripts.
  * Supports JSON output with --json flag and proper exit codes.
  */
@@ -15,9 +15,9 @@ import type { PersistedSessionState } from '../session/persistence.js';
 import type { LockCheckResult } from '../session/lock.js';
 
 /**
- * Overall status of Ralph in the current directory
+ * Overall status of Loopwright in the current directory
  */
-export type RalphStatus =
+export type LoopwrightStatus =
   | 'running'    // Active lock held by running process
   | 'paused'     // Session paused, resumable
   | 'completed'  // Session completed successfully
@@ -37,7 +37,7 @@ export type StatusExitCode = 0 | 1 | 2;
  */
 export interface StatusJsonOutput {
   /** Overall status */
-  status: RalphStatus;
+  status: LoopwrightStatus;
 
   /** Session details if a session exists */
   session?: {
@@ -145,13 +145,13 @@ function formatDate(isoString: string): string {
 }
 
 /**
- * Determine the overall Ralph status
+ * Determine the overall Loopwright status
  */
 function determineStatus(
   session: PersistedSessionState | null,
   lockCheck: LockCheckResult
-): RalphStatus {
-  // Check if Ralph is actively running (lock held by running process)
+): LoopwrightStatus {
+  // Check if Loopwright is actively running (lock held by running process)
   if (lockCheck.isLocked) {
     return 'running';
   }
@@ -184,7 +184,7 @@ function determineStatus(
 /**
  * Get the exit code for a given status
  */
-function getExitCode(status: RalphStatus): StatusExitCode {
+function getExitCode(status: LoopwrightStatus): StatusExitCode {
   switch (status) {
     case 'completed':
       return 0;
@@ -201,7 +201,7 @@ function getExitCode(status: RalphStatus): StatusExitCode {
  * Build JSON output from session and lock data
  */
 function buildJsonOutput(
-  status: RalphStatus,
+  status: LoopwrightStatus,
   session: PersistedSessionState | null,
   lockCheck: LockCheckResult
 ): StatusJsonOutput {
@@ -257,7 +257,7 @@ function buildJsonOutput(
  * Print human-readable status output
  */
 function printHumanStatus(
-  status: RalphStatus,
+  status: LoopwrightStatus,
   session: PersistedSessionState | null,
   lockCheck: LockCheckResult
 ): void {
@@ -265,7 +265,7 @@ function printHumanStatus(
   if (!session && status === 'no-session') {
     console.log('No session found.');
     console.log('');
-    console.log('Start a new session with: ralph-tui run');
+    console.log('Start a new session with: loopwright run');
     return;
   }
 
@@ -275,7 +275,7 @@ function printHumanStatus(
   // Display session info
   console.log('');
   console.log('═══════════════════════════════════════════════════════════════');
-  console.log('                    Ralph TUI Session Status                    ');
+  console.log('                    Loopwright Session Status                    ');
   console.log('═══════════════════════════════════════════════════════════════');
   console.log('');
 
@@ -358,18 +358,18 @@ function printHumanStatus(
   if (resumable) {
     console.log('  This session can be resumed.');
     console.log('');
-    console.log('  To resume:  ralph-tui resume');
-    console.log('  To restart: ralph-tui run --force');
+    console.log('  To resume:  loopwright resume');
+    console.log('  To restart: loopwright run --force');
   } else if (status === 'completed') {
     console.log('  This session is complete.');
     console.log('');
-    console.log('  To start new: ralph-tui run');
+    console.log('  To start new: loopwright run');
   } else if (status === 'failed') {
     console.log('  This session failed.');
     console.log('');
-    console.log('  To restart: ralph-tui run --force');
+    console.log('  To restart: loopwright run --force');
   } else if (status === 'running') {
-    console.log('  Ralph is currently running.');
+    console.log('  Loopwright is currently running.');
     console.log('');
     console.log('  To stop:    Use Ctrl+C in the running terminal');
   }
@@ -380,7 +380,7 @@ function printHumanStatus(
 /**
  * Get status icon
  */
-function getStatusIcon(status: RalphStatus): string {
+function getStatusIcon(status: LoopwrightStatus): string {
   switch (status) {
     case 'running':
       return '▶';
@@ -474,9 +474,9 @@ export async function executeStatusCommand(args: string[]): Promise<void> {
  */
 export function printStatusHelp(): void {
   console.log(`
-ralph-tui status - Check session status (headless)
+loopwright status - Check session status (headless)
 
-Usage: ralph-tui status [options]
+Usage: loopwright status [options]
 
 Options:
   --json            Output in JSON format (machine-readable)
@@ -489,7 +489,7 @@ Exit Codes:
   2    Session failed or no session exists
 
 Description:
-  Shows information about any existing Ralph session including:
+  Shows information about any existing Loopwright session including:
   - Current status (running, paused, completed, failed, no-session)
   - Progress (tasks completed, current iteration)
   - Elapsed time
@@ -501,17 +501,17 @@ Description:
   suitable for CI pipelines and scripts.
 
 Examples:
-  ralph-tui status              # Human-readable output
-  ralph-tui status --json       # JSON output for scripts
-  ralph-tui status --cwd /path  # Check session in specific directory
+  loopwright status              # Human-readable output
+  loopwright status --json       # JSON output for scripts
+  loopwright status --cwd /path  # Check session in specific directory
 
 CI/Script Usage:
-  # Check if Ralph is done
-  if ralph-tui status --json | jq -e '.status == "completed"' > /dev/null; then
-    echo "Ralph completed successfully"
+  # Check if Loopwright is done
+  if loopwright status --json | jq -e '.status == "completed"' > /dev/null; then
+    echo "Loopwright completed successfully"
   fi
 
   # Get task progress
-  ralph-tui status --json | jq '.session.progress.percent'
+  loopwright status --json | jq '.session.progress.percent'
 `);
 }

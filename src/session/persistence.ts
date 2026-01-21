@@ -1,7 +1,7 @@
 /**
- * ABOUTME: Session persistence for Ralph TUI.
+ * ABOUTME: Session persistence for Loopwright.
  * Handles saving and loading full session state including task statuses,
- * iteration history, and tracker state to .ralph-tui/session.json.
+ * iteration history, and tracker state to .loopwright/session.json.
  */
 
 import { join, dirname } from 'node:path';
@@ -18,9 +18,9 @@ import type { IterationResult } from '../engine/types.js';
 import type { SessionStatus } from './types.js';
 
 /**
- * Session file path relative to cwd (inside .ralph-tui directory)
+ * Session file path relative to cwd (inside .loopwright directory)
  */
-const SESSION_FILE = '.ralph-tui/session.json';
+const SESSION_FILE = '.loopwright/session.json';
 
 /**
  * Task status snapshot for persistence
@@ -54,7 +54,7 @@ export interface TrackerStateSnapshot {
 
 /**
  * Persisted session state
- * Saved to .ralph-tui/session.json
+ * Saved to .loopwright/session.json
  */
 export interface PersistedSessionState {
   /** Schema version for forward compatibility */

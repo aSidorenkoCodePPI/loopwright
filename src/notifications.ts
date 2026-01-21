@@ -1,5 +1,5 @@
 /**
- * ABOUTME: Desktop notification module for ralph-tui.
+ * ABOUTME: Desktop notification module for loopwright.
  * Provides cross-platform desktop notifications using node-notifier.
  * Notifications are used to alert users when long-running tasks complete.
  * Also provides configuration resolution for notification settings.
@@ -34,7 +34,7 @@ export interface NotificationOptions {
  * @param options.title - The notification title
  * @param options.body - The notification body/message
  * @param options.icon - Optional path to an icon image
- * @param options.sound - Sound mode ('off', 'system', or 'ralph')
+ * @param options.sound - Sound mode ('off', 'system', or 'loopwright')
  */
 export function sendNotification(options: NotificationOptions): void {
   const { title, body, icon, sound = 'off' } = options;
@@ -131,7 +131,7 @@ export interface CompletionNotificationOptions {
  * Sends a desktop notification when all tasks complete.
  *
  * The notification has:
- * - Title: "Ralph-TUI Complete"
+ * - Title: "Loopwright Complete"
  * - Body: Includes duration (Xm Ys format) and task count
  *
  * @param options - The completion notification options
@@ -141,7 +141,7 @@ export function sendCompletionNotification(options: CompletionNotificationOption
   const durationStr = formatDuration(durationMs);
 
   sendNotification({
-    title: 'Ralph-TUI Complete',
+    title: 'Loopwright Complete',
     body: `Completed ${taskCount} task${taskCount !== 1 ? 's' : ''} in ${durationStr}`,
     sound,
   });
@@ -167,7 +167,7 @@ export interface MaxIterationsNotificationOptions {
  * Sends a desktop notification when max iterations limit is reached.
  *
  * The notification has:
- * - Title: "Ralph-TUI Max Iterations"
+ * - Title: "Loopwright Max Iterations"
  * - Body: Includes iterations run, tasks completed vs remaining, duration
  *
  * @param options - The max iterations notification options
@@ -180,7 +180,7 @@ export function sendMaxIterationsNotification(options: MaxIterationsNotification
     `Completed ${tasksCompleted}, ${tasksRemaining} remaining. Duration: ${durationStr}`;
 
   sendNotification({
-    title: 'Ralph-TUI Max Iterations',
+    title: 'Loopwright Max Iterations',
     body,
     sound,
   });
@@ -204,7 +204,7 @@ export interface ErrorNotificationOptions {
  * Sends a desktop notification when execution stops due to a fatal error.
  *
  * The notification has:
- * - Title: "Ralph-TUI Error"
+ * - Title: "Loopwright Error"
  * - Body: Includes brief error summary, tasks completed before failure, duration
  *
  * @param options - The error notification options
@@ -223,7 +223,7 @@ export function sendErrorNotification(options: ErrorNotificationOptions): void {
     `Completed ${tasksCompleted} task${tasksCompleted !== 1 ? 's' : ''} before failure. Duration: ${durationStr}`;
 
   sendNotification({
-    title: 'Ralph-TUI Error',
+    title: 'Loopwright Error',
     body,
     sound,
   });

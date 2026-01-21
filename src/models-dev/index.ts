@@ -14,7 +14,7 @@ const MODELS_DEV_API_URL = 'https://models.dev/api.json';
 const CACHE_TTL_MS = 60 * 60 * 1000;
 
 /** Path to cache file */
-const CACHE_FILE_PATH = join(tmpdir(), 'ralph-tui-models-dev-cache.json');
+const CACHE_FILE_PATH = join(tmpdir(), 'loopwright-models-dev-cache.json');
 
 /**
  * Provider information from models.dev API

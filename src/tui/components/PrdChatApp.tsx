@@ -1,5 +1,5 @@
 /**
- * ABOUTME: PRD Chat application component for the Ralph TUI.
+ * ABOUTME: PRD Chat application component for the Loopwright TUI.
  * Provides an interactive chat interface for generating PRDs using an AI agent.
  * After PRD generation, shows a split view with PRD preview and tracker options.
  * Handles existing prd.json conflicts with user choice (Skip, Overwrite, Merge, Backup).
@@ -188,7 +188,7 @@ function getTrackerOptions(cwd: string): TrackerOption[] {
     {
       key: '1',
       name: 'JSON (prd.json)',
-      skillPrompt: `Convert this PRD to prd.json format using the ralph-tui-create-json skill.
+      skillPrompt: `Convert this PRD to prd.json format using the loopwright-create-json skill.
 
 CRITICAL: The output MUST use this EXACT schema:
 
@@ -213,7 +213,7 @@ The output file MUST be saved to: tasks/prd.json`,
     {
       key: '2',
       name: 'Beads issues',
-      skillPrompt: 'Convert this PRD to beads using the ralph-tui-create-beads skill.',
+      skillPrompt: 'Convert this PRD to beads using the loopwright-create-beads skill.',
       available: hasBeads,
     },
   ];

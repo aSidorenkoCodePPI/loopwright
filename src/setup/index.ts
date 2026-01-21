@@ -1,5 +1,5 @@
 /**
- * ABOUTME: Setup module for Ralph TUI interactive project configuration.
+ * ABOUTME: Setup module for Loopwright interactive project configuration.
  * Exports the setup wizard and related utilities.
  */
 

@@ -1,5 +1,5 @@
 /**
- * ABOUTME: Resume command for ralph-tui.
+ * ABOUTME: Resume command for loopwright.
  * Continues execution from a previously interrupted or paused session.
  */
 
@@ -184,7 +184,7 @@ async function runHeadless(
   engine.on((event) => {
     switch (event.type) {
       case 'engine:started':
-        console.log(`\nResumed Ralph. Total tasks: ${event.totalTasks}`);
+        console.log(`\nResumed Loopwright. Total tasks: ${event.totalTasks}`);
         break;
 
       case 'iteration:started':
@@ -209,7 +209,7 @@ async function runHeadless(
         break;
 
       case 'engine:paused':
-        console.log('\nPaused. Use "ralph-tui resume" to continue.');
+        console.log('\nPaused. Use "loopwright resume" to continue.');
         currentState = pauseSession(currentState);
         savePersistedSession(currentState).catch(() => {
           // Log but don't fail on save errors
@@ -225,7 +225,7 @@ async function runHeadless(
         break;
 
       case 'engine:stopped':
-        console.log(`\nRalph stopped. Reason: ${event.reason}`);
+        console.log(`\nLoopwright stopped. Reason: ${event.reason}`);
         console.log(`Total iterations: ${event.totalIterations}`);
         console.log(`Tasks completed: ${event.tasksCompleted}`);
         break;
@@ -272,7 +272,7 @@ export async function executeResumeCommand(args: string[]): Promise<void> {
   if (!hasSession) {
     console.error('No session to resume.');
     console.error('');
-    console.error('Start a new session with: ralph-tui run');
+    console.error('Start a new session with: loopwright run');
     process.exit(1);
   }
 
@@ -302,9 +302,9 @@ export async function executeResumeCommand(args: string[]): Promise<void> {
     console.error(`Cannot resume session in '${summary.status}' state.`);
     console.error('');
     if (summary.status === 'completed') {
-      console.error('Session has already completed. Start a new session with: ralph-tui run');
+      console.error('Session has already completed. Start a new session with: loopwright run');
     } else {
-      console.error('Session cannot be resumed. Start a new session with: ralph-tui run --force');
+      console.error('Session cannot be resumed. Start a new session with: loopwright run --force');
     }
     process.exit(1);
   }
@@ -312,7 +312,7 @@ export async function executeResumeCommand(args: string[]): Promise<void> {
   // Check for lock conflicts
   const sessionCheck = await checkSession(cwd);
   if (sessionCheck.isLocked && !sessionCheck.isStale && !force) {
-    console.error('Another Ralph instance is already running.');
+    console.error('Another Loopwright instance is already running.');
     console.error(`  PID: ${sessionCheck.lock?.pid}`);
     console.error('Use --force to override.');
     process.exit(1);
@@ -323,7 +323,7 @@ export async function executeResumeCommand(args: string[]): Promise<void> {
     await cleanStaleLock(cwd);
   }
 
-  console.log('Resuming Ralph TUI session...');
+  console.log('Resuming Loopwright session...');
   console.log('');
 
   // Initialize plugins
@@ -416,12 +416,12 @@ export async function executeResumeCommand(args: string[]): Promise<void> {
     await deletePersistedSession(cwd);
     console.log('Session completed and cleaned up.');
   } else if (finalState.status === 'paused') {
-    console.log('\nSession paused. Use "ralph-tui resume" to continue.');
+    console.log('\nSession paused. Use "loopwright resume" to continue.');
   } else {
-    console.log('\nSession state saved. Use "ralph-tui resume" to continue.');
+    console.log('\nSession state saved. Use "loopwright resume" to continue.');
   }
 
-  console.log('\nRalph TUI finished.');
+  console.log('\nLoopwright finished.');
 }
 
 /**
@@ -429,9 +429,9 @@ export async function executeResumeCommand(args: string[]): Promise<void> {
  */
 export function printResumeHelp(): void {
   console.log(`
-ralph-tui resume - Continue from a previous session
+loopwright resume - Continue from a previous session
 
-Usage: ralph-tui resume [options]
+Usage: loopwright resume [options]
 
 Options:
   --cwd <path>      Working directory (default: current directory)
@@ -440,19 +440,19 @@ Options:
 
 Description:
   Resumes execution from a previously interrupted or paused session.
-  The session state is stored in .ralph-tui/session.json.
+  The session state is stored in .loopwright/session.json.
 
   Sessions can be resumed if they are in one of these states:
   - paused: Manually paused by user
   - running: Crashed or interrupted unexpectedly
   - interrupted: Stopped by signal (Ctrl+C)
 
-  Completed or failed sessions cannot be resumed. Use 'ralph-tui run --force'
+  Completed or failed sessions cannot be resumed. Use 'loopwright run --force'
   to start a new session.
 
 Examples:
-  ralph-tui resume              # Resume session in current directory
-  ralph-tui resume --headless   # Resume without TUI
-  ralph-tui resume --force      # Force resume (override stale lock)
+  loopwright resume              # Resume session in current directory
+  loopwright resume --headless   # Resume without TUI
+  loopwright resume --force      # Force resume (override stale lock)
 `);
 }

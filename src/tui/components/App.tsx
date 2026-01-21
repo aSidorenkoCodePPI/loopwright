@@ -1,5 +1,5 @@
 /**
- * ABOUTME: Main App component for the Ralph TUI.
+ * ABOUTME: Main App component for the Loopwright TUI.
  * Composes Header, LeftPanel, RightPanel, and Footer into a responsive layout.
  */
 
@@ -25,7 +25,7 @@ export interface AppProps {
 
 /**
  * Create default application state with empty tasks.
- * Real tasks come from the tracker when using 'ralph-tui run'.
+ * Real tasks come from the tracker when using 'loopwright run'.
  */
 function createDefaultState(tasks: TaskItem[] = []): AppState {
   const completedTasksCount = tasks.filter((t) => t.status === 'done').length;

@@ -28,7 +28,7 @@ export interface AgentSwitchEntry {
  * Directory where iteration logs are stored (relative to cwd).
  * This is the new standard location per US-020.
  */
-export const ITERATIONS_DIR = '.ralph-tui/iterations';
+export const ITERATIONS_DIR = '.loopwright/iterations';
 
 /**
  * Metadata header stored at the top of each iteration log file.

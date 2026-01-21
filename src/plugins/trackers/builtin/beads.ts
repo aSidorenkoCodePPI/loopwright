@@ -171,7 +171,7 @@ function beadToTask(bead: BeadJson): TrackerTask {
   }
 
   // Infer parentId from bead ID if not provided (bd list --json bug)
-  // e.g., "ralph-tui-45r.37" -> parent is "ralph-tui-45r"
+  // e.g., "loopwright-45r.37" -> parent is "loopwright-45r"
   let parentId = bead.parent;
   if (!parentId && bead.id.includes('.')) {
     const lastDotIndex = bead.id.lastIndexOf('.');
@@ -315,9 +315,9 @@ export class BeadsTrackerPlugin extends BaseTrackerPlugin {
         id: 'labels',
         prompt: 'Labels to filter issues by (comma-separated):',
         type: 'text',
-        default: 'ralph',
+        default: 'loopwright',
         required: false,
-        help: 'Only show issues with these labels (e.g., "ralph,frontend")',
+        help: 'Only show issues with these labels (e.g., "loopwright,frontend")',
       },
     ];
   }

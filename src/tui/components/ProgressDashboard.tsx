@@ -1,18 +1,18 @@
 /**
- * ABOUTME: Progress Dashboard component for the Ralph TUI.
+ * ABOUTME: Progress Dashboard component for the Loopwright TUI.
  * Displays execution status, current task info, and agent/tracker configuration.
  * Shows detailed activity information to make engine state clear.
  */
 
 import type { ReactNode } from 'react';
-import { colors, statusIndicators, layout, type RalphStatus } from '../theme.js';
+import { colors, statusIndicators, layout, type LoopwrightStatus } from '../theme.js';
 
 /**
  * Props for the ProgressDashboard component
  */
 export interface ProgressDashboardProps {
-  /** Current Ralph execution status */
-  status: RalphStatus;
+  /** Current Loopwright execution status */
+  status: LoopwrightStatus;
   /** Name of the agent being used */
   agentName: string;
   /** Model being used (provider/model format) */
@@ -40,7 +40,7 @@ function truncateText(text: string, maxWidth: number): string {
  * Get status display configuration with detailed activity info
  */
 function getStatusDisplay(
-  status: RalphStatus,
+  status: LoopwrightStatus,
   currentTaskId?: string
 ): { label: string; color: string; indicator: string } {
   switch (status) {

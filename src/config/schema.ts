@@ -1,5 +1,5 @@
 /**
- * ABOUTME: Zod schemas for Ralph TUI configuration validation.
+ * ABOUTME: Zod schemas for Loopwright configuration validation.
  * Provides runtime validation with helpful error messages for config files.
  */
 
@@ -43,7 +43,7 @@ export const RateLimitHandlingConfigSchema = z.object({
 /**
  * Notification sound mode schema
  */
-export const NotificationSoundModeSchema = z.enum(['off', 'system', 'ralph']);
+export const NotificationSoundModeSchema = z.enum(['off', 'system']);
 
 /**
  * Notifications configuration schema
@@ -87,7 +87,7 @@ export const TrackerPluginConfigSchema = z.object({
 
 /**
  * Stored configuration schema (global or project config file)
- * Both global (~/.config/ralph-tui/config.toml) and project (.ralph-tui/config.toml)
+ * Both global (~/.config/loopwright/config.toml) and project (.loopwright/config.toml)
  * use this schema.
  */
 export const StoredConfigSchema = z

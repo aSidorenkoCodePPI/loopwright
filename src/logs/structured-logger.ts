@@ -244,18 +244,18 @@ export class StructuredLogger {
    * Log engine lifecycle events.
    */
   engineStarted(totalTasks: number): void {
-    this.info('engine', `Ralph started. Total tasks: ${totalTasks}`);
+    this.info('engine', `Loopwright started. Total tasks: ${totalTasks}`);
   }
 
   engineStopped(reason: string, totalIterations: number, tasksCompleted: number): void {
     this.info(
       'engine',
-      `Ralph stopped. Reason: ${reason}. Iterations: ${totalIterations}, Tasks completed: ${tasksCompleted}`
+      `Loopwright stopped. Reason: ${reason}. Iterations: ${totalIterations}, Tasks completed: ${tasksCompleted}`
     );
   }
 
   enginePaused(currentIteration: number): void {
-    this.info('engine', `Paused at iteration ${currentIteration}. Use "ralph-tui resume" to continue.`);
+    this.info('engine', `Paused at iteration ${currentIteration}. Use "loopwright resume" to continue.`);
   }
 
   engineResumed(fromIteration: number): void {

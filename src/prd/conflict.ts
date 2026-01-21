@@ -1,5 +1,5 @@
 /**
- * ABOUTME: PRD conflict resolution module for ralph-tui.
+ * ABOUTME: PRD conflict resolution module for loopwright.
  * Handles detection and resolution of existing prd.json files.
  * Provides options: Skip, Overwrite, Merge, and Backup & Overwrite.
  */

@@ -1,7 +1,7 @@
 /**
- * ABOUTME: Epic selection view component for the Ralph TUI.
- * Displays a list of available epics for the user to select and start a Ralph run.
- * Used when ralph-tui is launched without an --epic flag.
+ * ABOUTME: Epic selection view component for the Loopwright TUI.
+ * Displays a list of available epics for the user to select and start a Loopwright run.
+ * Used when loopwright is launched without an --epic flag.
  */
 
 import type { ReactNode } from 'react';

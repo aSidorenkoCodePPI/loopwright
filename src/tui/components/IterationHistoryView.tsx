@@ -1,5 +1,5 @@
 /**
- * ABOUTME: IterationHistoryView component for the Ralph TUI.
+ * ABOUTME: IterationHistoryView component for the Loopwright TUI.
  * Displays a list of all iterations with status, task, duration, outcome, and subagent summary.
  * Supports keyboard navigation through iterations with Enter to drill into details.
  */

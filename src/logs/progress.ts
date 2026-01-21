@@ -11,7 +11,7 @@ import type { IterationResult } from '../engine/types.js';
 /**
  * Default path for the progress file (relative to cwd).
  */
-export const PROGRESS_FILE = '.ralph-tui/progress.md';
+export const PROGRESS_FILE = '.loopwright/progress.md';
 
 /**
  * Maximum size for the progress file before truncating old entries.
@@ -169,7 +169,7 @@ export async function appendProgress(
     existing = await readFile(filePath, 'utf-8');
   } catch {
     // File doesn't exist yet - create with header
-    existing = `# Ralph Progress Log
+    existing = `# Loopwright Progress Log
 
 This file tracks progress across iterations. It's automatically updated
 after each iteration and included in agent prompts for context.
@@ -254,7 +254,7 @@ export async function clearProgress(cwd: string): Promise<void> {
   const filePath = join(cwd, PROGRESS_FILE);
 
   try {
-    await writeFile(filePath, `# Ralph Progress Log
+    await writeFile(filePath, `# Loopwright Progress Log
 
 This file tracks progress across iterations. It's automatically updated
 after each iteration and included in agent prompts for context.

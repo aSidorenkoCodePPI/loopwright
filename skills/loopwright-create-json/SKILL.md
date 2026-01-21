@@ -1,13 +1,13 @@
 ---
-name: ralph-tui-create-json
-description: "Convert PRDs to prd.json format for ralph-tui execution. Creates JSON task files with user stories, acceptance criteria, and dependencies. Triggers on: create prd.json, convert to json, ralph json, create json tasks."
+name: loopwright-create-json
+description: "Convert PRDs to prd.json format for loopwright execution. Creates JSON task files with user stories, acceptance criteria, and dependencies. Triggers on: create prd.json, convert to json, loopwright json, create json tasks."
 ---
 
-# Ralph TUI - Create JSON Tasks
+# Loopwright - Create JSON Tasks
 
-Converts PRDs to prd.json format for ralph-tui autonomous execution.
+Converts PRDs to prd.json format for loopwright autonomous execution.
 
-> **Note:** This skill is bundled with ralph-tui's JSON tracker plugin. Future tracker plugins (Linear, GitHub Issues, etc.) will bundle their own task creation skills.
+> **Note:** This skill is bundled with loopwright's JSON tracker plugin. Future tracker plugins (Linear, GitHub Issues, etc.) will bundle their own task creation skills.
 
 ---
 
@@ -18,7 +18,7 @@ Take a PRD (markdown file or text) and create a prd.json file:
 2. Parse user stories from the PRD
 3. Append quality gates to each story's acceptance criteria
 4. Set up dependencies between stories
-5. Output ready for `ralph-tui run --prd <path>`
+5. Output ready for `loopwright run --prd <path>`
 
 ---
 
@@ -50,7 +50,7 @@ Extract:
 ```json
 {
   "project": "[Project name from PRD or directory]",
-  "branchName": "ralph/[feature-name-kebab-case]",
+  "branchName": "loopwright/[feature-name-kebab-case]",
   "description": "[Feature description from PRD]",
   "userStories": [
     {
@@ -91,9 +91,9 @@ Extract:
 
 ## Story Size: The #1 Rule
 
-**Each story must be completable in ONE ralph-tui iteration (~one agent context window).**
+**Each story must be completable in ONE loopwright iteration (~one agent context window).**
 
-Ralph-tui spawns a fresh agent instance per iteration with no memory of previous work. If a story is too big, the agent runs out of context before finishing.
+Loopwright spawns a fresh agent instance per iteration with no memory of previous work. If a story is too big, the agent runs out of context before finishing.
 
 ### Right-sized stories:
 - Add a database column + migration
@@ -123,7 +123,7 @@ Use the `dependsOn` array to specify which stories must complete first:
 }
 ```
 
-Ralph-tui will:
+Loopwright will:
 - Show US-002 as "blocked" until US-001 completes
 - Never select US-002 for execution while US-001 is open
 - Include "Prerequisites: US-001" in the prompt when working on US-002
@@ -163,7 +163,7 @@ Each story's acceptance criteria should include:
 4. **Priority**: Based on dependency order (1 = highest)
 5. **dependsOn**: Array of story IDs this story requires
 6. **All stories**: `passes: false` and empty `notes`
-7. **branchName**: Derive from feature name, kebab-case, prefixed with `ralph/`
+7. **branchName**: Derive from feature name, kebab-case, prefixed with `loopwright/`
 8. **Acceptance criteria**: Story criteria + quality gates appended
 9. **UI stories**: Also append UI-specific gates (browser verification)
 
@@ -175,9 +175,9 @@ Default: `./tasks/prd.json` (alongside the PRD markdown files)
 
 This keeps all PRD-related files together in the `tasks/` directory.
 
-Or specify a different path - ralph-tui will use it with:
+Or specify a different path - loopwright will use it with:
 ```bash
-ralph-tui run --prd ./path/to/prd.json
+loopwright run --prd ./path/to/prd.json
 ```
 
 ---
@@ -227,7 +227,7 @@ For UI stories, also include:
 ```json
 {
   "project": "my-app",
-  "branchName": "ralph/task-priority",
+  "branchName": "loopwright/task-priority",
   "description": "Add priority levels to tasks",
   "userStories": [
     {
@@ -283,14 +283,14 @@ For UI stories, also include:
 
 ---
 
-## Running with ralph-tui
+## Running with loopwright
 
 After creating prd.json:
 ```bash
-ralph-tui run --prd ./tasks/prd.json
+loopwright run --prd ./tasks/prd.json
 ```
 
-Ralph-tui will:
+Loopwright will:
 1. Load stories from prd.json
 2. Select the highest-priority story with `passes: false` and no blocking dependencies
 3. Generate a prompt with story details + acceptance criteria

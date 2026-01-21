@@ -1,5 +1,5 @@
 /**
- * ABOUTME: Create-PRD command for ralph-tui.
+ * ABOUTME: Create-PRD command for loopwright.
  * Uses AI-powered conversation to create Product Requirements Documents.
  * After PRD generation, shows split view with PRD preview and tracker options.
  * Supports --jira flag to select a Jira issue as the starting context.
@@ -100,10 +100,10 @@ export function parseCreatePrdArgs(args: string[]): CreatePrdArgs {
  */
 export function printCreatePrdHelp(): void {
   console.log(`
-ralph-tui create-prd - Create a new PRD with AI assistance
+loopwright create-prd - Create a new PRD with AI assistance
 
-Usage: ralph-tui create-prd [options]
-       ralph-tui prime [options]
+Usage: loopwright create-prd [options]
+       loopwright prime [options]
 
 Options:
   --cwd, -C <path>       Working directory (default: current directory)
@@ -118,7 +118,7 @@ Options:
 Description:
   Creates a Product Requirements Document (PRD) through an AI-powered conversation.
 
-  The AI agent (using the ralph-tui-prd skill):
+  The AI agent (using the loopwright-prd skill):
   1. Asks about the feature you want to build
   2. Asks contextual follow-up questions about users, requirements, and scope
   3. Generates a markdown PRD with user stories and acceptance criteria
@@ -130,14 +130,14 @@ Description:
   - Uses the issue details (description, acceptance criteria, linked issues)
     as starting context for the PRD conversation
 
-  Requires an AI agent to be configured. Run 'ralph-tui setup' to configure one.
+  Requires an AI agent to be configured. Run 'loopwright setup' to configure one.
 
 Examples:
-  ralph-tui create-prd                      # Start AI-powered PRD creation
-  ralph-tui prime                           # Alias for create-prd
-  ralph-tui create-prd --jira               # Select Jira issue first
-  ralph-tui create-prd --agent copilot       # Use specific agent
-  ralph-tui create-prd --output ./docs      # Save PRD to custom directory
+  loopwright create-prd                      # Start AI-powered PRD creation
+  loopwright prime                           # Alias for create-prd
+  loopwright create-prd --jira               # Select Jira issue first
+  loopwright create-prd --agent copilot       # Use specific agent
+  loopwright create-prd --output ./docs      # Save PRD to custom directory
 `);
 }
 
@@ -255,7 +255,7 @@ async function runChatMode(parsedArgs: CreatePrdArgs): Promise<PrdCreationResult
   if (!agent) {
     console.error('');
     console.error('Chat mode requires an AI agent. Options:');
-    console.error('  1. Run "ralph-tui setup" to configure an agent');
+    console.error('  1. Run "loopwright setup" to configure an agent');
     console.error('  2. Use "--agent copilot" or "--agent opencode" to specify one');
     process.exit(1);
   }
@@ -319,21 +319,21 @@ async function runChatMode(parsedArgs: CreatePrdArgs): Promise<PrdCreationResult
  * Execute the create-prd command.
  * Always uses AI-powered chat mode for conversational PRD creation.
  * If --jira is specified, first shows Jira issue selection.
- * If a tracker format is selected, launches ralph-tui run with the tasks loaded.
+ * If a tracker format is selected, launches loopwright run with the tasks loaded.
  */
 export async function executeCreatePrdCommand(args: string[]): Promise<void> {
   const parsedArgs = parseCreatePrdArgs(args);
   const cwd = parsedArgs.cwd || process.cwd();
 
   // Verify setup is complete before running
-  await requireSetup(cwd, 'ralph-tui prime');
+  await requireSetup(cwd, 'loopwright prime');
 
   const storedConfig = await loadStoredConfig(cwd);
 
   if (parsedArgs.prdSkill) {
     if (!storedConfig.skills_dir?.trim()) {
-      console.error('Error: --prd-skill requires skills_dir to be set in config.');
-      console.error('Set skills_dir in ~/.config/ralph-tui/config.toml or .ralph-tui/config.toml.');
+    console.error('Error: --prd-skill requires skills_dir to be set in config.');
+    console.error('Set skills_dir in ~/.config/loopwright/config.toml or .loopwright/config.toml.');
       process.exit(1);
     }
 
@@ -401,10 +401,10 @@ export async function executeCreatePrdCommand(args: string[]): Promise<void> {
     process.exit(0);
   }
 
-  // If a tracker format was selected, launch ralph-tui with the tasks loaded
+  // If a tracker format was selected, launch loopwright with the tasks loaded
   if (result.selectedTracker) {
     console.log('');
-    console.log('Launching Ralph TUI with your new tasks...');
+    console.log('Launching Loopwright with your new tasks...');
     console.log('');
 
     const runArgs: string[] = [];

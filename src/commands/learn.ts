@@ -1,8 +1,8 @@
 /**
- * ABOUTME: Learn command for ralph-tui.
+ * ABOUTME: Learn command for loopwright.
  * Analyzes a project directory so AI agents understand the codebase structure and conventions.
  * Scans file structure, detects project type, and extracts patterns.
- * Supports path exclusion via .gitignore, .ralphignore, and binary file detection.
+ * Supports path exclusion via .gitignore, .loopwrightignore, and binary file detection.
  */
 
 import * as fs from 'node:fs';
@@ -166,16 +166,16 @@ function gitignorePatternToRegex(pattern: string): { regex: RegExp; negated: boo
 }
 
 /**
- * Path exclusion manager that handles gitignore, ralphignore, binary files, and include patterns
+ * Path exclusion manager that handles gitignore, loopwrightignore, binary files, and include patterns
  */
 class PathExclusionManager {
   private gitignorePatterns: { regex: RegExp; negated: boolean; dirOnly: boolean }[] = [];
-  private ralphignorePatterns: { regex: RegExp; negated: boolean; dirOnly: boolean }[] = [];
+  private loopwrightignorePatterns: { regex: RegExp; negated: boolean; dirOnly: boolean }[] = [];
   private includePatterns: RegExp[] = [];
   private stats: ExclusionStats = {
     totalExcluded: 0,
     excludedByGitignore: 0,
-    excludedByRalphignore: 0,
+    excludedByLoopwrightignore: 0,
     excludedAsBinary: 0,
     excludedByDefault: 0,
     reincluded: 0,
@@ -189,10 +189,10 @@ class PathExclusionManager {
     const gitignoreRaw = parseIgnoreFile(gitignorePath);
     this.gitignorePatterns = gitignoreRaw.map(p => gitignorePatternToRegex(p));
 
-    // Parse .ralphignore
-    const ralphignorePath = path.join(rootPath, '.ralphignore');
-    const ralphignoreRaw = parseIgnoreFile(ralphignorePath);
-    this.ralphignorePatterns = ralphignoreRaw.map(p => gitignorePatternToRegex(p));
+    // Parse .loopwrightignore
+    const loopwrightignorePath = path.join(rootPath, '.loopwrightignore');
+    const loopwrightignoreRaw = parseIgnoreFile(loopwrightignorePath);
+    this.loopwrightignorePatterns = loopwrightignoreRaw.map(p => gitignorePatternToRegex(p));
 
     // Parse include patterns
     this.includePatterns = includePatterns.map(p => {
@@ -206,10 +206,10 @@ class PathExclusionManager {
 
     this.config = {
       gitignorePatterns: gitignoreRaw,
-      ralphignorePatterns: ralphignoreRaw,
+      loopwrightignorePatterns: loopwrightignoreRaw,
       includePatterns,
       respectsGitignore: fs.existsSync(gitignorePath),
-      hasRalphignore: fs.existsSync(ralphignorePath),
+      hasLoopwrightignore: fs.existsSync(loopwrightignorePath),
     };
   }
 
@@ -240,11 +240,11 @@ class PathExclusionManager {
   }
 
   /**
-   * Check if a path matches ralphignore patterns
+   * Check if a path matches loopwrightignore patterns
    */
-  private matchesRalphignore(relativePath: string, isDirectory: boolean): boolean {
+  private matchesLoopwrightignore(relativePath: string, isDirectory: boolean): boolean {
     let excluded = false;
-    for (const { regex, negated, dirOnly } of this.ralphignorePatterns) {
+    for (const { regex, negated, dirOnly } of this.loopwrightignorePatterns) {
       if (dirOnly && !isDirectory) continue;
       if (regex.test(relativePath)) {
         excluded = !negated;
@@ -287,12 +287,12 @@ class PathExclusionManager {
       return { excluded: true, reason: 'gitignore' };
     }
 
-    // Check ralphignore
-    if (this.matchesRalphignore(relativePath, true)) {
-      this.stats.excludedByRalphignore++;
+    // Check loopwrightignore
+    if (this.matchesLoopwrightignore(relativePath, true)) {
+      this.stats.excludedByLoopwrightignore++;
       this.stats.totalExcluded++;
-      this.logExclusion(relativePath, 'ralphignore');
-      return { excluded: true, reason: 'ralphignore' };
+      this.logExclusion(relativePath, 'loopwrightignore');
+      return { excluded: true, reason: 'loopwrightignore' };
     }
 
     return { excluded: false };
@@ -324,12 +324,12 @@ class PathExclusionManager {
       return { excluded: true, reason: 'gitignore' };
     }
 
-    // Check ralphignore
-    if (this.matchesRalphignore(relativePath, false)) {
-      this.stats.excludedByRalphignore++;
+    // Check loopwrightignore
+    if (this.matchesLoopwrightignore(relativePath, false)) {
+      this.stats.excludedByLoopwrightignore++;
       this.stats.totalExcluded++;
-      this.logExclusion(relativePath, 'ralphignore');
-      return { excluded: true, reason: 'ralphignore' };
+      this.logExclusion(relativePath, 'loopwrightignore');
+      return { excluded: true, reason: 'loopwrightignore' };
     }
 
     return { excluded: false };
@@ -670,14 +670,14 @@ export interface LearnArgs {
 export interface ExclusionConfig {
   /** Patterns from .gitignore */
   gitignorePatterns: string[];
-  /** Patterns from .ralphignore */
-  ralphignorePatterns: string[];
+  /** Patterns from .loopwrightignore */
+  loopwrightignorePatterns: string[];
   /** Include patterns that override exclusions */
   includePatterns: string[];
   /** Whether gitignore is being respected */
   respectsGitignore: boolean;
-  /** Whether ralphignore was found */
-  hasRalphignore: boolean;
+  /** Whether loopwrightignore was found */
+  hasLoopwrightignore: boolean;
 }
 
 /**
@@ -688,8 +688,8 @@ export interface ExclusionStats {
   totalExcluded: number;
   /** Files excluded by gitignore */
   excludedByGitignore: number;
-  /** Files excluded by ralphignore */
-  excludedByRalphignore: number;
+  /** Files excluded by loopwrightignore */
+  excludedByLoopwrightignore: number;
   /** Files excluded as binary */
   excludedAsBinary: number;
   /** Files excluded by default patterns */
@@ -819,15 +819,15 @@ class ProgressReporter {
  */
 export function printLearnHelp(): void {
   console.log(`
-ralph-tui learn - Analyze project for AI agents
+loopwright learn - Analyze project for AI agents
 
-Usage: ralph-tui learn [path] [options]
+Usage: loopwright learn [path] [options]
 
 Arguments:
   [path]              Directory to analyze (default: current directory)
 
 Options:
-  --output, -o <path> Custom output file path (default: ./ralph-context.md)
+  --output, -o <path> Custom output file path (default: ./loopwright-context.md)
   --depth <level>     Analysis depth: shallow, standard (default), or deep
   --agent             Use master agent (copilot -p) for intelligent folder groupings
   --strategy <type>   Folder splitting strategy for parallel workloads:
@@ -886,17 +886,17 @@ Dry Run Mode:
   - Estimated file counts per group
   
   Combine with --output to save the plan:
-    ralph-tui learn --dry-run --output plan.json
+    loopwright learn --dry-run --output plan.json
 
 Path Exclusions:
   The following paths are excluded by default:
   - Directories: node_modules/, .git/, dist/, build/, and other common build/cache dirs
   - Binary files: images, videos, archives, compiled files, fonts, etc.
   - Patterns from .gitignore (if present in project root)
-  - Patterns from .ralphignore (if present in project root)
+  - Patterns from .loopwrightignore (if present in project root)
   
   Use --include to override exclusions for specific patterns:
-    ralph-tui learn --include "*.min.js" --include "dist/**"
+    loopwright learn --include "*.min.js" --include "dist/**"
   
   Use --verbose to see which paths are being excluded and why.
 
@@ -933,7 +933,7 @@ Error Handling:
 
 Description:
   Analyzes the project directory so AI agents understand the codebase
-  structure and conventions. Generates a ralph-context.md file with:
+  structure and conventions. Generates a loopwright-context.md file with:
 
   - Project overview and type detection
   - Directory structure representation
@@ -946,7 +946,7 @@ Description:
   Supports projects with up to 10,000 files for efficient analysis.
 
 Output:
-  Creates ralph-context.md in the project root by default.
+  Creates loopwright-context.md in the project root by default.
   Use --output to specify a custom path (parent directories will be created).
   If the file exists, prompts for confirmation unless --force is used.
 
@@ -957,26 +957,26 @@ Exit Codes:
        Only returned if --strict is used
 
 Examples:
-  ralph-tui learn                             # Analyze current directory
-  ralph-tui learn ./my-project                # Analyze specific directory
-  ralph-tui learn --agent                     # Use master agent for folder groupings
-  ralph-tui learn --agent --json              # Get agent plan as JSON
-  ralph-tui learn --strategy top-level        # Split by top-level directories
-  ralph-tui learn --strategy domain           # Group by code dependencies
-  ralph-tui learn --strategy balanced         # Distribute files evenly
-  ralph-tui learn --dry-run                   # Preview split plan without executing
-  ralph-tui learn --dry-run --output plan.json # Save plan to file
-  ralph-tui learn --depth shallow             # Quick structural scan
-  ralph-tui learn --depth deep                # Full code pattern analysis
-  ralph-tui learn --output ./docs/context.md  # Custom output location
-  ralph-tui learn -o "path with spaces/ctx.md" # Path with spaces
-  ralph-tui learn --include "dist/**"         # Include dist folder
-  ralph-tui learn --include "*.min.js"        # Include minified JS files
-  ralph-tui learn --json                      # JSON output for scripts
-  ralph-tui learn -v                          # Verbose output (shows exclusions)
-  ralph-tui learn --force                     # Overwrite without confirmation
-  ralph-tui learn --quiet                     # Suppress progress output
-  ralph-tui learn --strict                    # Fail on any warning
+  loopwright learn                             # Analyze current directory
+  loopwright learn ./my-project                # Analyze specific directory
+  loopwright learn --agent                     # Use master agent for folder groupings
+  loopwright learn --agent --json              # Get agent plan as JSON
+  loopwright learn --strategy top-level        # Split by top-level directories
+  loopwright learn --strategy domain           # Group by code dependencies
+  loopwright learn --strategy balanced         # Distribute files evenly
+  loopwright learn --dry-run                   # Preview split plan without executing
+  loopwright learn --dry-run --output plan.json # Save plan to file
+  loopwright learn --depth shallow             # Quick structural scan
+  loopwright learn --depth deep                # Full code pattern analysis
+  loopwright learn --output ./docs/context.md  # Custom output location
+  loopwright learn -o "path with spaces/ctx.md" # Path with spaces
+  loopwright learn --include "dist/**"         # Include dist folder
+  loopwright learn --include "*.min.js"        # Include minified JS files
+  loopwright learn --json                      # JSON output for scripts
+  loopwright learn -v                          # Verbose output (shows exclusions)
+  loopwright learn --force                     # Overwrite without confirmation
+  loopwright learn --quiet                     # Suppress progress output
+  loopwright learn --strict                    # Fail on any warning
 `);
 }
 
@@ -1584,7 +1584,7 @@ function generateContextMarkdown(result: LearnResult): string {
   // Header
   lines.push('# Project Context');
   lines.push('');
-  lines.push(`> Generated by ralph-tui learn on ${timestamp}`);
+  lines.push(`> Generated by loopwright learn on ${timestamp}`);
   lines.push(`> Analysis depth: ${result.depthLevel}`);
   lines.push('');
 
@@ -3245,12 +3245,12 @@ function savePartialOutputsBackup(
   rootPath: string
 ): string {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-  const backupPath = path.join(rootPath, `.ralph-partial-outputs-${timestamp}.md`);
+  const backupPath = path.join(rootPath, `.loopwright-partial-outputs-${timestamp}.md`);
   
   const lines: string[] = [];
   lines.push('# Partial Worker Outputs (Backup)');
   lines.push('');
-  lines.push(`> Generated by ralph-tui learn on ${new Date().toISOString()}`);
+  lines.push(`> Generated by loopwright learn on ${new Date().toISOString()}`);
   lines.push(`> This file contains raw worker outputs preserved as backup.`);
   lines.push('');
   lines.push('---');
@@ -3429,7 +3429,7 @@ export async function mergeWorkerOutputs(
         const mergedLines: string[] = [];
         mergedLines.push('# Project Context');
         mergedLines.push('');
-        mergedLines.push(`> Generated by ralph-tui learn on ${new Date().toISOString()}`);
+        mergedLines.push(`> Generated by loopwright learn on ${new Date().toISOString()}`);
         mergedLines.push(`> Merged from ${successfulWorkers.length} worker outputs`);
         mergedLines.push('');
         mergedLines.push('---');
@@ -4195,8 +4195,8 @@ function printHumanResult(result: LearnResult, verbose: boolean): void {
     if (stats.excludedByGitignore > 0) {
       console.log(`    By .gitignore:       ${stats.excludedByGitignore.toLocaleString()}`);
     }
-    if (stats.excludedByRalphignore > 0) {
-      console.log(`    By .ralphignore:     ${stats.excludedByRalphignore.toLocaleString()}`);
+    if (stats.excludedByLoopwrightignore > 0) {
+      console.log(`    By .loopwrightignore:     ${stats.excludedByLoopwrightignore.toLocaleString()}`);
     }
     if (stats.excludedAsBinary > 0) {
       console.log(`    Binary files:        ${stats.excludedAsBinary.toLocaleString()}`);
@@ -4209,7 +4209,7 @@ function printHumanResult(result: LearnResult, verbose: boolean): void {
     if (config) {
       console.log('  Exclusion Sources:');
       console.log(`    .gitignore:          ${config.respectsGitignore ? 'found (' + config.gitignorePatterns.length + ' patterns)' : 'not found'}`);
-      console.log(`    .ralphignore:        ${config.hasRalphignore ? 'found (' + config.ralphignorePatterns.length + ' patterns)' : 'not found'}`);
+      console.log(`    .loopwrightignore:        ${config.hasLoopwrightignore ? 'found (' + config.loopwrightignorePatterns.length + ' patterns)' : 'not found'}`);
       if (config.includePatterns.length > 0) {
         console.log(`    --include patterns:  ${config.includePatterns.length}`);
       }
@@ -4303,8 +4303,8 @@ function printHumanResult(result: LearnResult, verbose: boolean): void {
  */
 export async function executeLearnCommand(args: string[]): Promise<void> {
   const parsedArgs = parseLearnArgs(args);
-  // Use custom output path or default to ralph-context.md in analyzed directory
-  const contextFilePath = parsedArgs.output || path.join(parsedArgs.path, 'ralph-context.md');
+  // Use custom output path or default to loopwright-context.md in analyzed directory
+  const contextFilePath = parsedArgs.output || path.join(parsedArgs.path, 'loopwright-context.md');
 
   // Create progress reporter (quiet for JSON mode or if --quiet flag)
   const progressReporter = new ProgressReporter(parsedArgs.quiet || parsedArgs.json);
@@ -4380,7 +4380,7 @@ export async function executeLearnCommand(args: string[]): Promise<void> {
         
         // US-007 AC1: Merge phase begins automatically when all workers complete
         // US-007 AC3: Merge uses copilot -p to intelligently combine outputs
-        // US-007 AC6, AC7: --output flag specifies custom output, default is ralph-context.md
+        // US-007 AC6, AC7: --output flag specifies custom output, default is loopwright-context.md
         const hasSuccessfulWorkers = workerSummary.successCount > 0;
         if (hasSuccessfulWorkers) {
           const mergeResult = await mergeWorkerOutputs(

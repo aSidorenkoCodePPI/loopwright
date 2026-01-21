@@ -152,7 +152,7 @@ function validatePrdJsonSchema(data: unknown, filePath: string): PrdJson {
   ]
 }
 
-To fix: Regenerate the tasks using "ralph-tui convert --to json <prd-file.md>"
+To fix: Regenerate the tasks using "loopwright convert --to json <prd-file.md>"
 or manually restructure the file to match the schema above.`
     );
   }
@@ -216,7 +216,7 @@ or manually restructure the file to match the schema above.`
     throw new PrdJsonSchemaError(
       `Invalid prd.json schema in ${filePath}`,
       errors,
-      'Run "ralph-tui convert --to json <prd-file.md>" to regenerate with correct schema, ' +
+      'Run "loopwright convert --to json <prd-file.md>" to regenerate with correct schema, ' +
         'or manually fix the issues listed above.'
     );
   }
@@ -268,7 +268,7 @@ function statusToPasses(status: TrackerTaskStatus): boolean {
  * Convert a PrdUserStory to TrackerTask.
  */
 function storyToTask(story: PrdUserStory, parentName?: string): TrackerTask {
-  // Use notes or completionNotes (notes takes precedence as it's the Ralph standard)
+  // Use notes or completionNotes (notes takes precedence as it's the Loopwright standard)
   const notes = story.notes || story.completionNotes;
 
   return {

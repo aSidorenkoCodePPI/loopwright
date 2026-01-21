@@ -1,6 +1,6 @@
 /**
- * ABOUTME: Main entry point for ralph-tui
- * Ralph TUI is an AI Agent Loop Orchestrator that provides a terminal user interface
+ * ABOUTME: Main entry point for loopwright
+ * Loopwright is an AI Agent Loop Orchestrator that provides a terminal user interface
  * for managing and monitoring AI agent workflows.
  */
 

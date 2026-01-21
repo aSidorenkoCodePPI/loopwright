@@ -1,5 +1,5 @@
 /**
- * ABOUTME: Session and lock management for Ralph TUI.
+ * ABOUTME: Session and lock management for Loopwright.
  * Handles session persistence, lock files, and resume functionality.
  */
 
@@ -25,8 +25,8 @@ import type {
 /**
  * Directory for session data (relative to cwd)
  */
-const SESSION_DIR = '.ralph-tui';
-const LOCK_FILE = 'ralph.lock';
+const SESSION_DIR = '.loopwright';
+const LOCK_FILE = 'loopwright.lock';
 const SESSION_FILE = 'session.json';
 
 /**

@@ -1,6 +1,6 @@
 /**
  * ABOUTME: TUI module for terminal user interface components.
- * This module exports OpenTUI React components for the ralph-tui terminal interface.
+ * This module exports OpenTUI React components for the loopwright terminal interface.
  */
 
 // Components

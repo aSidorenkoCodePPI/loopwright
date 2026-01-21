@@ -1,5 +1,5 @@
 /**
- * ABOUTME: Select Jira issue command for ralph-tui.
+ * ABOUTME: Select Jira issue command for loopwright.
  * Provides an interactive TUI for selecting a Jira issue from the user's assigned list.
  * Used as part of the PRD generation workflow (US-002).
  */

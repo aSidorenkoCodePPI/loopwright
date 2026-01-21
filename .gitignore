@@ -47,6 +47,6 @@ Thumbs.db
 .env.local
 .env.*.local
 
-# Ralph TUI runtime (all user-specific state)
-.ralph-tui/
+# Loopwright runtime (all user-specific state)
+.loopwright/
 .envrc

@@ -1,7 +1,7 @@
 /**
  * ABOUTME: Type definitions for the tracker plugin system.
  * Defines the interfaces and types that all tracker plugins must implement
- * to integrate with Ralph TUI's task orchestration.
+ * to integrate with Loopwright's task orchestration.
  */
 
 /**
@@ -348,7 +348,7 @@ export interface TrackerPlugin {
 
   /**
    * Clean up resources when the plugin is unloaded.
-   * Called when Ralph TUI shuts down.
+   * Called when Loopwright shuts down.
    */
   dispose(): Promise<void>;
 }

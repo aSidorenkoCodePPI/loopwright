@@ -1,5 +1,5 @@
 /**
- * ABOUTME: Jira PRD command for ralph-tui.
+ * ABOUTME: Jira PRD command for loopwright.
  * Fetches Jira issues assigned to the current user via MCP integration
  * through the Copilot CLI, displaying them for PRD generation workflow.
  */
@@ -112,9 +112,9 @@ export function parseJiraPrdArgs(args: string[]): JiraPrdArgs {
  */
 export function printJiraPrdHelp(): void {
   console.log(`
-ralph-tui jira-prd - Fetch Jira issues assigned to you for PRD generation
+loopwright jira-prd - Fetch Jira issues assigned to you for PRD generation
 
-Usage: ralph-tui jira-prd [options]
+Usage: loopwright jira-prd [options]
 
 Options:
   --cwd, -C <path>     Working directory (default: current directory)
@@ -128,7 +128,7 @@ Description:
   of issues with their key, summary, type, and status.
 
   This command is useful for reviewing available work before starting
-  PRD generation with 'ralph-tui create-prd'.
+  PRD generation with 'loopwright create-prd'.
 
 Prerequisites:
   - Copilot CLI must be installed and configured
@@ -136,9 +136,9 @@ Prerequisites:
   - User must be authenticated with Jira
 
 Examples:
-  ralph-tui jira-prd                    # Fetch assigned issues
-  ralph-tui jira-prd --verbose          # Show detailed output
-  ralph-tui jira-prd --timeout 120000   # Extended timeout for slow connections
+  loopwright jira-prd                    # Fetch assigned issues
+  loopwright jira-prd --verbose          # Show detailed output
+  loopwright jira-prd --timeout 120000   # Extended timeout for slow connections
 `);
 }
 
@@ -922,6 +922,6 @@ export async function executeJiraPrdCommand(args: string[]): Promise<void> {
   if (result.issues.length > 0) {
     console.log();
     printInfo('To create a PRD from a Jira issue, run:');
-    console.log('  ralph-tui create-prd');
+    console.log('  loopwright create-prd');
   }
 }

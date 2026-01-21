@@ -1,5 +1,5 @@
 /**
- * ABOUTME: Docs command for ralph-tui.
+ * ABOUTME: Docs command for loopwright.
  * Opens documentation in the default browser or shows the URL.
  * Detects repository URL from git remote origin for accurate documentation links.
  */
@@ -10,7 +10,7 @@ import { promisify } from 'node:util';
 const execAsync = promisify(exec);
 
 /** Default repository base URL (used if git remote detection fails) */
-const DEFAULT_REPO_URL = 'https://github.com/subsy/ralph-tui';
+const DEFAULT_REPO_URL = 'https://github.com/subsy/loopwright';
 
 /** Documentation section paths relative to repo base */
 const DOC_PATHS = {
@@ -80,9 +80,9 @@ async function getDocUrl(section: DocSection): Promise<string> {
  */
 export function printDocsHelp(): void {
   console.log(`
-ralph-tui docs - Open documentation in browser
+loopwright docs - Open documentation in browser
 
-Usage: ralph-tui docs [section] [options]
+Usage: loopwright docs [section] [options]
 
 Sections:
   (none)        Open main documentation
@@ -97,14 +97,14 @@ Options:
   --help, -h   Show this help message
 
 Description:
-  Opens the Ralph TUI documentation in your default web browser.
+  Opens the Loopwright documentation in your default web browser.
   Use --url to just print the URL if you prefer to open it manually.
 
 Examples:
-  ralph-tui docs              # Open main documentation
-  ralph-tui docs quickstart   # Open quick start guide
-  ralph-tui docs --url        # Print main docs URL
-  ralph-tui docs cli --url    # Print CLI reference URL
+  loopwright docs              # Open main documentation
+  loopwright docs quickstart   # Open quick start guide
+  loopwright docs --url        # Print main docs URL
+  loopwright docs cli --url    # Print CLI reference URL
 `);
 }
 

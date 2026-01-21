@@ -1,5 +1,5 @@
 /**
- * ABOUTME: Footer component for the Ralph TUI.
+ * ABOUTME: Footer component for the Loopwright TUI.
  * Displays keyboard shortcuts for user reference.
  */
 

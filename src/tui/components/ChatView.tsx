@@ -1,5 +1,5 @@
 /**
- * ABOUTME: Reusable chat interface component for the Ralph TUI.
+ * ABOUTME: Reusable chat interface component for the Loopwright TUI.
  * Displays a conversation with an AI agent, supporting streaming output,
  * user input, and message history. Used primarily for PRD generation.
  */

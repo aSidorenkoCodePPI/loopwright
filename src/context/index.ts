@@ -1,6 +1,6 @@
 /**
- * ABOUTME: Context file loader for ralph-tui run command.
- * Loads and validates context files (e.g., ralph-context.md) for injection into AI prompts.
+ * ABOUTME: Context file loader for loopwright run command.
+ * Loads and validates context files (e.g., loopwright-context.md) for injection into AI prompts.
  * Supports multiple context files with size validation for performance.
  */
 

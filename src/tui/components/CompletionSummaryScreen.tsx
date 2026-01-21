@@ -1,5 +1,5 @@
 /**
- * ABOUTME: Completion Summary Screen component for the Ralph TUI.
+ * ABOUTME: Completion Summary Screen component for the Loopwright TUI.
  * Displays analysis summary when all workers complete, including elapsed time,
  * folder/file counts, worker success/failure stats, output path, and warnings.
  * US-008: View Analysis Summary on Completion

@@ -1,5 +1,5 @@
 /**
- * ABOUTME: Type definitions for Ralph TUI session management.
+ * ABOUTME: Type definitions for Loopwright session management.
  * Defines session state, lock files, and related structures.
  */
 

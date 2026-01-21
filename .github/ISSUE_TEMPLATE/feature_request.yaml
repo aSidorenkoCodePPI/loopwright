@@ -1,6 +1,6 @@
 ---
 name: Feature request
-description: Suggest a new feature or improvement for ralph-tui
+description: Suggest a new feature or improvement for loopwright
 labels: enhancement
 body:
   - type: markdown
@@ -17,7 +17,7 @@ body:
         Include specific examples where possible.
       placeholder: |
         I often need to [task] but currently have to [workaround].
-        It would be helpful if ralph-tui could...
+        It would be helpful if loopwright could...
     validations:
       required: true
 
@@ -28,7 +28,7 @@ body:
       description: How do you imagine this feature working? Include any mockups, API examples, or UI suggestions.
       placeholder: |
         A possible implementation could be:
-        - Add command `ralph-tui feature --option`
+        - Add command `loopwright feature --option`
         - New menu item in the UI at location X
         - Configuration option in config file...
       render: markdown

@@ -1,5 +1,5 @@
 /**
- * ABOUTME: Configuration management commands for Ralph TUI.
+ * ABOUTME: Configuration management commands for Loopwright.
  * Provides 'config show' to display merged configuration with source info.
  */
 
@@ -37,7 +37,7 @@ function formatSourceInfo(source: ConfigSource): string {
   if (source.projectPath) {
     lines.push(`│   ✓ ${source.projectPath}`);
   } else {
-    lines.push(`│   ○ .ralph-tui/config.toml (not found in project tree)`);
+    lines.push(`│   ○ .loopwright/config.toml (not found in project tree)`);
   }
 
   lines.push('└' + '─'.repeat(55));
@@ -62,7 +62,7 @@ function formatMergedConfig(config: StoredConfig): string {
     lines.push('│   defaultTracker = "beads-bv"');
     lines.push('│   maxIterations = 10');
     lines.push('│   iterationDelay = 1000');
-    lines.push('│   outputDir = ".ralph-output"');
+    lines.push('│   outputDir = ".loopwright-output"');
   } else {
     // Serialize to TOML and add pipe prefix for box alignment
     const toml = serializeConfig(config);
@@ -94,7 +94,7 @@ export async function executeConfigShowCommand(args: string[]): Promise<void> {
   const { config, source } = await loadStoredConfigWithSource(cwd);
 
   // Display
-  console.log('Ralph TUI Configuration');
+  console.log('Loopwright Configuration');
   console.log('═'.repeat(56));
 
   // Source information
@@ -122,9 +122,9 @@ export async function executeConfigShowCommand(args: string[]): Promise<void> {
  */
 export function printConfigHelp(): void {
   console.log(`
-Ralph TUI Configuration Commands
+Loopwright Configuration Commands
 
-Usage: ralph-tui config <command> [options]
+Usage: loopwright config <command> [options]
 
 Commands:
   show              Display merged configuration
@@ -137,7 +137,7 @@ Show Options:
 
 Configuration Files:
   Global:   ${CONFIG_PATHS.global}
-  Project:  .ralph-tui/config.toml (in project root or any parent directory)
+  Project:  .loopwright/config.toml (in project root or any parent directory)
 
 Project config overrides global config. CLI flags override both.
 
@@ -183,6 +183,6 @@ export async function executeConfigCommand(args: string[]): Promise<boolean> {
   }
 
   console.error(`Unknown config command: ${subcommand}`);
-  console.log('Run "ralph-tui config help" for available commands');
+  console.log('Run "loopwright config help" for available commands');
   return true;
 }

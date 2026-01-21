@@ -1,5 +1,5 @@
 /**
- * ABOUTME: Execution engine for Ralph TUI agent loop.
+ * ABOUTME: Execution engine for Loopwright agent loop.
  * Handles the iteration cycle: select task → inject prompt → run agent → check result → update tracker.
  * Supports configurable error handling strategies: retry, skip, abort.
  */
@@ -24,7 +24,7 @@ import type {
   SubagentTreeNode,
 } from './types.js';
 import { toEngineSubagentState } from './types.js';
-import type { RalphConfig, RateLimitHandlingConfig } from '../config/types.js';
+import type { LoopwrightConfig, RateLimitHandlingConfig } from '../config/types.js';
 import { DEFAULT_RATE_LIMIT_HANDLING } from '../config/types.js';
 import { RateLimitDetector, type RateLimitDetectionResult } from './rate-limit-detector.js';
 import type { TrackerPlugin, TrackerTask } from '../plugins/trackers/types.js';
@@ -61,7 +61,7 @@ const PRIMARY_RECOVERY_TEST_PROMPT = 'Reply with just the word "ok".';
  * Falls back to a hardcoded default if template rendering fails.
  * Includes recent progress from previous iterations for context.
  */
-async function buildPrompt(task: TrackerTask, config: RalphConfig): Promise<string> {
+async function buildPrompt(task: TrackerTask, config: LoopwrightConfig): Promise<string> {
   // Load recent progress for context (last 5 iterations)
   const recentProgress = await getRecentProgressSummary(config.cwd, 5);
 
@@ -99,7 +99,7 @@ async function buildPrompt(task: TrackerTask, config: RalphConfig): Promise<stri
  * Execution engine for the agent loop
  */
 export class ExecutionEngine {
-  private config: RalphConfig;
+  private config: LoopwrightConfig;
   private agent: AgentPlugin | null = null;
   private tracker: TrackerPlugin | null = null;
   private listeners: EngineEventListener[] = [];
@@ -125,7 +125,7 @@ export class ExecutionEngine {
   /** Track agent switches during the current iteration for logging */
   private currentIterationAgentSwitches: AgentSwitchEntry[] = [];
 
-  constructor(config: RalphConfig) {
+  constructor(config: LoopwrightConfig) {
     this.config = config;
     this.state = {
       status: 'idle',
@@ -895,7 +895,7 @@ export class ExecutionEngine {
         endedAt: endedAt.toISOString(),
       };
 
-      // Save iteration output to .ralph-tui/iterations/ directory
+      // Save iteration output to .loopwright/iterations/ directory
       // Include subagent trace if any subagents were spawned
       const events = this.subagentParser.getEvents();
       const states = this.subagentParser.getAllSubagents();

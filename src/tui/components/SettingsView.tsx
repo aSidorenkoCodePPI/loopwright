@@ -1,7 +1,7 @@
 /**
- * ABOUTME: Settings view component for configuring Ralph TUI.
+ * ABOUTME: Settings view component for configuring Loopwright TUI.
  * Displays current configuration values and allows modification.
- * Changes are persisted to .ralph-tui/config.toml in the project directory.
+ * Changes are persisted to .loopwright/config.toml in the project directory.
  */
 
 import type { ReactNode } from 'react';
@@ -159,8 +159,8 @@ function buildSettingDefinitions(
       key: 'notificationSound',
       label: 'Notif Sound',
       type: 'select',
-      description: 'Sound mode: off, system (OS default), or ralph (Wiggum quotes)',
-      options: ['off', 'system', 'ralph'],
+      description: 'Sound mode: off or system (OS default)',
+      options: ['off', 'system'],
       getValue: (config) => config.notifications?.sound ?? 'off',
       setValue: (config, value) => ({
         ...config,

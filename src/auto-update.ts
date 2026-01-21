@@ -5,7 +5,7 @@
 
 import { spawnSync } from 'node:child_process';
 
-const PACKAGE_NAME = '@asidorenkocodeppi/ralph-tui';
+const PACKAGE_NAME = '@asidorenkocodeppi/loopwright';
 
 interface NpmViewResult {
   version: string;
@@ -60,7 +60,7 @@ function getLatestVersion(): string | null {
  * @returns true if update succeeded, false otherwise
  */
 function performUpdate(): boolean {
-  console.log('\x1b[36m⬆ Updating ralph-tui...\x1b[0m');
+  console.log('\x1b[36m⬆ Updating loopwright...\x1b[0m');
 
   try {
     const result = spawnSync('npm', ['install', '-g', PACKAGE_NAME], {

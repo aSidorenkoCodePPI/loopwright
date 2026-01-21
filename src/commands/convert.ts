@@ -1,5 +1,5 @@
 /**
- * ABOUTME: Convert command for ralph-tui.
+ * ABOUTME: Convert command for loopwright.
  * Converts PRD markdown files to prd.json or Beads format.
  */
 
@@ -108,7 +108,7 @@ export function parseConvertArgs(args: string[]): ConvertArgs | null {
 
   if (!input) {
     console.error('Error: Input file path is required');
-    console.log('Usage: ralph-tui convert --to json ./tasks/prd-feature.md');
+    console.log('Usage: loopwright convert --to json ./tasks/prd-feature.md');
     return null;
   }
 
@@ -120,9 +120,9 @@ export function parseConvertArgs(args: string[]): ConvertArgs | null {
  */
 export function printConvertHelp(): void {
   console.log(`
-ralph-tui convert - Convert PRD markdown to JSON or Beads format
+loopwright convert - Convert PRD markdown to JSON or Beads format
 
-Usage: ralph-tui convert --to <format> <input-file> [options]
+Usage: loopwright convert --to <format> <input-file> [options]
 
 Arguments:
   <input-file>           Path to the PRD markdown file to convert
@@ -132,7 +132,7 @@ Options:
   --output, -o <path>    Output file path (default: ./prd.json, only for json format)
   --branch, -b <name>    Git branch name (prompts if not provided)
   --labels, -l <labels>  Labels to apply (comma-separated, beads format only)
-                         Default: "ralph" is always included for beads format
+                         Default: "loopwright" is always included for beads format
   --force, -f            Overwrite existing files without prompting
   --verbose, -v          Show detailed parsing output
   --help, -h             Show this help message
@@ -146,24 +146,24 @@ Description:
   - Dependencies from **Depends on:** lines
 
   For JSON format (--to json):
-    Creates a prd.json file for use with \`ralph-tui run --prd ./prd.json\`
+    Creates a prd.json file for use with \`loopwright run --prd ./prd.json\`
 
   For Beads format (--to beads):
     - Creates an epic bead for the feature
     - Creates child beads for each user story
     - Sets up dependencies based on story order or explicit deps
-    - Applies the 'ralph' label to all created beads
+    - Applies the 'loopwright' label to all created beads
     - Runs bd sync after creation
     - Displays all created bead IDs
 
 Examples:
   # Convert to JSON format
-  ralph-tui convert --to json ./tasks/prd-feature.md
-  ralph-tui convert --to json ./docs/requirements.md -o ./custom.json
+  loopwright convert --to json ./tasks/prd-feature.md
+  loopwright convert --to json ./docs/requirements.md -o ./custom.json
 
   # Convert to Beads format
-  ralph-tui convert --to beads ./tasks/prd-feature.md
-  ralph-tui convert --to beads ./prd.md --labels "frontend,sprint-1"
+  loopwright convert --to beads ./tasks/prd-feature.md
+  loopwright convert --to beads ./prd.md --labels "frontend,sprint-1"
 `);
 }
 
@@ -236,8 +236,8 @@ async function convertToBeads(
 ): Promise<BeadsConversionResult> {
   const storyIds: string[] = [];
 
-  // Ensure 'ralph' label is always included
-  const allLabels = ['ralph', ...labels.filter((l) => l !== 'ralph')];
+  // Ensure 'loopwright' label is always included
+  const allLabels = ['loopwright', ...labels.filter((l) => l !== 'loopwright')];
   const labelsStr = allLabels.join(',');
 
   // Step 1: Create the epic bead
@@ -480,7 +480,7 @@ async function executeJsonConversion(
     branchName = await promptText('Git branch name for this work:', {
       default: defaultBranch,
       required: true,
-      help: 'The git branch that will be used when running ralph-tui',
+      help: 'The git branch that will be used when running loopwright',
     });
   }
 
@@ -546,7 +546,7 @@ async function executeJsonConversion(
   console.log(`  Branch: ${branchName}`);
   console.log(`  Output: ${outputPath}`);
   console.log();
-  printInfo(`Run with: ralph-tui run --prd ${outputPath}`);
+  printInfo(`Run with: loopwright run --prd ${outputPath}`);
 }
 
 /**
@@ -589,5 +589,5 @@ async function executeBeadsConversion(
     console.log(`  Task: ${storyId}`);
   }
   console.log();
-  printInfo(`Run with: ralph-tui run --epic ${result.epicId}`);
+  printInfo(`Run with: loopwright run --epic ${result.epicId}`);
 }

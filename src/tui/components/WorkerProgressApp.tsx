@@ -1,5 +1,5 @@
 /**
- * ABOUTME: WorkerProgressApp component for the Ralph TUI.
+ * ABOUTME: WorkerProgressApp component for the Loopwright TUI.
  * Main application component for displaying worker execution progress.
  * Integrates WorkerProgressDashboard with keyboard handling and state management.
  * Used by the learn command when executing workers with TUI enabled.

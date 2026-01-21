@@ -1,12 +1,12 @@
 /**
- * ABOUTME: Compact header component for the Ralph TUI.
+ * ABOUTME: Compact header component for the Loopwright TUI.
  * Displays only essential info: status indicator, current task (if running), progress (X/Y), elapsed time.
  * Also shows active agent name with fallback indicator and rate limit status.
  * Designed for minimal vertical footprint while providing clear visibility into current state.
  */
 
 import type { ReactNode } from 'react';
-import { colors, statusIndicators, formatElapsedTime, layout, type RalphStatus } from '../theme.js';
+import { colors, statusIndicators, formatElapsedTime, layout, type LoopwrightStatus } from '../theme.js';
 import type { HeaderProps } from '../types.js';
 
 /** Rate limit indicator icon */
@@ -22,10 +22,10 @@ function truncateText(text: string, maxWidth: number): string {
 }
 
 /**
- * Get compact status display for the current Ralph status.
+ * Get compact status display for the current Loopwright status.
  * Returns a short, scannable label optimized for the compact header.
  */
-function getStatusDisplay(status: RalphStatus): { indicator: string; color: string; label: string } {
+function getStatusDisplay(status: LoopwrightStatus): { indicator: string; color: string; label: string } {
   switch (status) {
     case 'ready':
       return { indicator: statusIndicators.ready, color: colors.status.info, label: 'Ready' };
