@@ -1,7 +1,7 @@
 # Loopwright
 
 [![Built with Bun](https://img.shields.io/badge/Built%20with-Bun-f9f1e1.svg)](https://bun.sh)
-[![npm version](https://img.shields.io/npm/v/@asidorenkocodeppi/loopwright.svg)](https://www.npmjs.com/package/@asidorenkocodeppi/loopwright)
+[![npm version](https://img.shields.io/npm/v/@asidorenkocode/loopwright.svg)](https://www.npmjs.com/package/@asidorenkocode/loopwright)
 
 **AI Agent Loop Orchestrator** - A terminal UI for orchestrating AI coding agents to work through task lists autonomously.
 
@@ -36,10 +36,10 @@ bun --version
 
 ```powershell
 # Install the package
-npm install -g @asidorenkocodeppi/loopwright
+npm install -g @asidorenkocode/loopwright
 
 # IMPORTANT: Also install with bun to create the CLI symlink
-bun install -g @asidorenkocodeppi/loopwright
+bun install -g @asidorenkocode/loopwright
 ```
 
 > **Note:** The `bun install -g` step is required to create the `loopwright` command in your PATH.
@@ -63,7 +63,7 @@ loopwright --help
 If you get "command not found", try:
 ```powershell
 # Option 1: Run directly with bunx
-bunx @asidorenkocodeppi/loopwright --help
+bunx @asidorenkocode/loopwright --help
 
 # Option 2: Add bun's bin to PATH (add to your shell profile)
 export PATH="$HOME/.bun/bin:$PATH"
